@@ -1276,6 +1276,7 @@ contains
       !! bt : input real : toroidal field
       !! btot : input real : total field
       use physics_variables, only: iculbl, betalim, beta, betanb, betaft, bt, btot
+      use stellarator_variables, only: istell
       use constraint_variables, only: fbetatry
       implicit none
             real(dp), intent(out) :: tmp_cc
@@ -1285,7 +1286,7 @@ contains
       character(len=10), intent(out) :: tmp_units
 
       ! Include all beta components: relevant for both tokamaks and stellarators
-      if (iculbl == 0) then
+      if ((iculbl == 0).or.(istell /= 0)) then
          tmp_cc =  1.0D0 - fbetatry * betalim/beta
          tmp_con = betalim
          tmp_err = betalim - beta / fbetatry
@@ -3391,6 +3392,10 @@ contains
       !! fecrh_ignition : input real : f-value for constraint powerht_local > powerscaling
       !! max_gyrotron_frequency : input real :  Max. av. gyrotron frequency
       !! te0_ecrh_achievable : input real : Max. achievable electron temperature at ignition point
+      use constraint_variables, only: fecrh_ignition
+      use stellarator_variables, only: max_gyrotron_frequency, te0_ecrh_achievable, powerscaling_constraint, powerht_constraint
+      use physics_variables, only: ignite
+      use current_drive_variables, only: pheat
       implicit none
       real(dp), intent(out) :: tmp_cc
       real(dp), intent(out) :: tmp_con
@@ -3398,8 +3403,17 @@ contains
       character(len=1), intent(out) :: tmp_symbol
       character(len=10), intent(out) :: tmp_units
 
-      ! Constraint equation 91 is reserved for when Stellarator is added back to PROCESS
+      ! Achievable ECRH te needs to be larger than needed te for igntion
+      if(ignite==0) then
+         tmp_cc = 1.0D0 - fecrh_ignition* (powerht_constraint+pheat)/powerscaling_constraint
+      else
+         tmp_cc = 1.0D0 - fecrh_ignition* powerht_constraint/powerscaling_constraint
+      endif
 
+      tmp_con = powerscaling_constraint * (1.0D0 - tmp_cc)
+      tmp_err = powerht_constraint * tmp_cc
+      tmp_symbol = '<'
+      tmp_units = 'MW'
    end subroutine constraint_eqn_091
 
 

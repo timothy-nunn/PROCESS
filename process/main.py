@@ -49,6 +49,7 @@ from process.plasma_geometry import PlasmaGeom
 from process.pulse import Pulse
 from process.scan import Scan
 from process import final
+from process.stellarator import Stellarator
 from process.structure import Structure
 from process.build import Build
 from process.utilities.f2py_string_patch import string_to_f2py_compatible
@@ -578,6 +579,14 @@ class Models:
         self.costs = Costs()
         self.ife = IFE(availability=self.availability, costs=self.costs)
         self.plasma_profile = PlasmaProfile()
+        self.stellarator = Stellarator(
+            availability=self.availability,
+            buildings=self.buildings,
+            vacuum=self.vacuum,
+            costs=self.costs,
+            power=self.power,
+            plasma_profile=self.plasma_profile,
+        )
         self.costs_2015 = Costs2015()
         self.physics = Physics(plasma_profile=self.plasma_profile)
         self.fw = Fw()
