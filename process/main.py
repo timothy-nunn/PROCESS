@@ -579,6 +579,9 @@ class Models:
         self.costs = Costs()
         self.ife = IFE(availability=self.availability, costs=self.costs)
         self.plasma_profile = PlasmaProfile()
+        self.fw = Fw()
+        self.blanket_library = BlanketLibrary(fw=self.fw)
+        self.ccfe_hcpb = CCFE_HCPB(blanket_library=self.blanket_library)
         self.stellarator = Stellarator(
             availability=self.availability,
             buildings=self.buildings,
@@ -586,12 +589,10 @@ class Models:
             costs=self.costs,
             power=self.power,
             plasma_profile=self.plasma_profile,
+            hcpb=self.ccfe_hcpb,
         )
         self.costs_2015 = Costs2015()
         self.physics = Physics(plasma_profile=self.plasma_profile)
-        self.fw = Fw()
-        self.blanket_library = BlanketLibrary(fw=self.fw)
-        self.ccfe_hcpb = CCFE_HCPB(blanket_library=self.blanket_library)
         self.dcll = DCLL(blanket_library=self.blanket_library)
 
 

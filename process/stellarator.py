@@ -20,7 +20,7 @@ from process.fortran import (
     structure_variables,
     divertor_variables,
     cost_variables,
-    # fwbs_module,
+    fwbs_module,
     error_handling,
     constraint_variables,
     rebco_variables,
@@ -54,7 +54,7 @@ class Stellarator:
     """
 
     def __init__(
-        self, availability, vacuum, buildings, costs, power, plasma_profile
+        self, availability, vacuum, buildings, costs, power, plasma_profile, hcpb
     ) -> None:
         """Initialises the Stellarator model's variables
 
@@ -66,8 +66,10 @@ class Stellarator:
         :type Vacuum: process.vacuum.Vacuum
         :param costs: a pointer to the costs model, allowing use of costs' variables/methods
         :type costs: process.costs.Costs
-        :param plasma_profile: a pointer to the plasma_profile model, allowing use of plasma_profile' variables/methods
+        :param plasma_profile: a pointer to the plasma_profile model, allowing use of plasma_profile's variables/methods
         :type plasma_profile: process.plasma_profile.PlasmaProfile
+        :param hcpb: a pointer to the ccfe_hcpb model, allowing use of ccfe_hcpb's variables/methods
+        :type hcpb: process.hcpb.CCFE_HCPB
         """
 
         self.outfile: int = constants.nout
@@ -79,6 +81,7 @@ class Stellarator:
         self.costs = costs
         self.power = power
         self.plasma_profile = plasma_profile
+        self.hcpb = hcpb
 
     def run(self, output: bool):
         """Routine to call the physics and engineering modules
@@ -1028,6 +1031,67 @@ class Stellarator:
                 divertor_variables.hldiv,
             )
 
+    def blanket_neutronics(self):
+        # heating of the blanket
+        if fwbs_variables.breedmat == 1:
+            fwbs_variables.breeder = "Orthosilicate"
+            fwbs_variables.densbreed = 1.50e3
+        elif fwbs_variables.breedmat == 2:
+            fwbs_variables.breeder = "Metatitanate"
+            fwbs_variables.densbreed = 1.78e3
+        else:
+            fwbs_variables.breeder = (
+                "Zirconate"  # (In reality, rarely used - activation problems)
+            )
+            fwbs_variables.densbreed = 2.12e3
+
+        fwbs_variables.whtblkt = fwbs_variables.volblkt * fwbs_variables.densbreed
+        self.hcpb.nuclear_heating_blanket()
+
+        # Heating of the magnets
+        self.hcpb.nuclear_heating_magnets(False)
+
+        # Rough estimate of TF coil volume used, assuming 25% of the total
+        # TF coil perimeter is inboard, 75% outboard
+        tf_volume = (
+            0.25 * tfcoil_variables.tfleng * tfcoil_variables.tfareain
+            + 0.75
+            * tfcoil_variables.tfleng
+            * tfcoil_variables.arealeg
+            * tfcoil_variables.n_tf
+        )
+
+        fwbs_variables.ptfnucpm3 = fwbs_variables.ptfnuc / tf_volume
+
+        # heating of the shield
+        self.hcpb.nuclear_heating_shield()
+
+        # Energy multiplication factor
+        fwbs_variables.emult = 1.269
+
+        # Tritium breeding ratio
+        fwbs_variables.tbr = self.hcpb.tbr_shimwell(
+            fwbs_variables.volblkt, fwbs_variables.li6enrich, 1
+        )
+
+        # Use older model to calculate neutron fluence since it
+        # is not calculated in the CCFE blanket model
+        (
+            _,
+            _,
+            _,
+            fwbs_variables.nflutf,
+            _,
+            _,
+            _,
+            _,
+            _,
+            _,
+        ) = fwbs_module.sctfcoil_nuclear_heating_iter90()
+
+        # blktlife calculation left entierly to availability
+        # Cannot find calculation for vvhemax in CCFE blanket
+
     def stfwbs(self, output: bool):
         """Routine to calculate first wall, blanket and shield properties
         for a stellarator
@@ -1114,6 +1178,12 @@ class Stellarator:
         volshldo = build_variables.shareaob * build_variables.shldoth
         fwbs_variables.volshld = volshldi + volshldo
 
+        fwbs_variables.whtshld = (
+            fwbs_variables.volshld
+            * fwbs_variables.denstl
+            * (1.0e0 - fwbs_variables.vfshld)
+        )
+
         #  Neutron power lost through holes in first wall (eventually absorbed by
         #  shield)
 
@@ -1126,8 +1196,7 @@ class Stellarator:
 
         #  Blanket neutronics calculations
         if fwbs_variables.blktmodel == 1:
-            # TODO
-            # fwbs_module.blanket_neutronics()
+            self.blanket_neutronics()
 
             if heat_transport_variables.ipowerflow == 1:
                 fwbs_variables.pnucdiv = physics_variables.pneutmw * fwbs_variables.fdiv
@@ -1216,20 +1285,19 @@ class Stellarator:
                 #  Nuclear heating in the shield
                 fwbs_variables.pnucshld = pneut2 - fwbs_variables.pnucblkt
 
-                # TODO
                 #  Superconducting coil shielding calculations
-                # (
-                #     coilhtmx,
-                #     dpacop,
-                #     htheci,
-                #     fwbs_variables.nflutf,
-                #     pheci,
-                #     pheco,
-                #     ptfiwp,
-                #     ptfowp,
-                #     raddose,
-                #     fwbs_variables.ptfnuc,
-                # ) = fwbs_module.sctfcoil_nuclear_heating_iter90()
+                (
+                    coilhtmx,
+                    dpacop,
+                    htheci,
+                    fwbs_variables.nflutf,
+                    pheci,
+                    pheco,
+                    ptfiwp,
+                    ptfowp,
+                    raddose,
+                    fwbs_variables.ptfnuc,
+                ) = fwbs_module.sctfcoil_nuclear_heating_iter90()
 
             else:  # heat_transport_variables.ipowerflow == 1
                 #  Neutron power incident on divertor (MW)
@@ -1651,13 +1719,6 @@ class Stellarator:
         if fwbs_variables.blktmodel == 0:
             coolvol = coolvol + fwbs_variables.volblkt * fwbs_variables.vfblkt
 
-        #  Shield mass
-
-        fwbs_variables.whtshld = (
-            fwbs_variables.volshld
-            * fwbs_variables.denstl
-            * (1.0e0 - fwbs_variables.vfshld)
-        )
         coolvol = coolvol + fwbs_variables.volshld * fwbs_variables.vfshld
 
         #  Penetration shield (set = internal shield)
