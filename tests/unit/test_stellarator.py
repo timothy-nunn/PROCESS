@@ -19,6 +19,10 @@ from process.vacuum import Vacuum
 from process.availability import Availability
 from process.buildings import Buildings
 from process.costs import Costs
+from process.plasma_profiles import PlasmaProfile
+from process.hcpb import CCFE_HCPB
+from process.blanket_library import BlanketLibrary
+from process.fw import Fw
 
 
 @pytest.fixture
@@ -28,7 +32,15 @@ def stellarator():
     :returns: initialised Stellarator object
     :rtype: process.stellerator.Stellarator
     """
-    return Stellarator(Availability(), Vacuum(), Buildings(), Costs(), Power())
+    return Stellarator(
+        Availability(),
+        Vacuum(),
+        Buildings(),
+        Costs(),
+        Power(),
+        PlasmaProfile(),
+        CCFE_HCPB(BlanketLibrary(Fw())),
+    )
 
 
 class StgeomParam(NamedTuple):
