@@ -360,6 +360,7 @@ class SingleRun:
         self.initialise()
         self.validate_user_model()
         self.run_tests()
+        fortran.init_module.new_mfile(f"0")
         self.call_solver()
         self.run_scan(self.solver)
         self.show_errors()

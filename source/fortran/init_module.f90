@@ -204,4 +204,16 @@ contains
       if (verbose == 1) close(unit = vfile)
    end subroutine finish
 
+   subroutine new_mfile(iden)
+      ! Open fresh mfile to write output again
+      use global_variables, only: verbose, fileprefix, output_prefix
+      use constants, only: opt_file, vfile, nout, nplot, mfile, sig_file
+      implicit none
+
+      character(len=*), intent(in) :: iden
+
+      open(unit=mfile    ,file=trim(output_prefix)//trim(iden)//'_MFILE.DAT' ,status='unknown')
+   end subroutine new_mfile
+
+
 end module init_module

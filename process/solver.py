@@ -1,7 +1,8 @@
 """An adapter for different solvers."""
 
 import logging
-from process.fortran import numerics, global_variables
+from process.fortran import numerics, global_variables, init_module, scan_module
+from process import final
 import numpy as np
 from process.evaluators import Evaluators
 from abc import ABC, abstractmethod
@@ -170,6 +171,10 @@ class Vmcon(_Solver):
             B = np.identity(numerics.nvar) * self.b
 
         def _solver_callback(i: int, _x, _result, convergence_param: float):
+            scan_module.post_optimise(1)
+            final.finalise(self.evaluators.caller.models, 6)
+            init_module.new_mfile(f"{i+1}")
+
             print(
                 f"{i+1} | Convergence Parameter: {convergence_param:.3E}",
                 end="\r",
