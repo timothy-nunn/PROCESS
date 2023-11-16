@@ -51,7 +51,7 @@ class Optimiser:
         self.solver.set_bounds(bndl, bndu)
         self.solver.set_opt_params(x)
         self.solver.set_constraints(m, meq)
-        ifail = self.solver.solve()
+        ifail = self.solver.solve(self)
 
         # If fail then alter value of epsfcn - this can be improved
         if ifail != 1:
@@ -62,7 +62,7 @@ class Optimiser:
             numerics.epsfcn = numerics.epsfcn * 10  # try new larger value
             print("new epsfcn = ", numerics.epsfcn)
 
-            ifail = self.solver.solve()
+            ifail = self.solver.solve(self)
             # First solution attempt failed (ifail != 1): supply ifail value
             # to next attempt
             numerics.epsfcn = numerics.epsfcn / 10  # reset value
@@ -71,7 +71,7 @@ class Optimiser:
             print("Trying again with new epsfcn")
             numerics.epsfcn = numerics.epsfcn / 10  # try new smaller value
             print("new epsfcn = ", numerics.epsfcn)
-            ifail = self.solver.solve()
+            ifail = self.solver.solve(self)
             numerics.epsfcn = numerics.epsfcn * 10  # reset value
 
         # If VMCON has exited with error code 5 try another run using a multiple

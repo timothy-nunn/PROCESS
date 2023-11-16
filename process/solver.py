@@ -1,8 +1,9 @@
 """An adapter for different solvers."""
 
 import logging
-from process.fortran import numerics, global_variables
 from process.utilities.f2py_string_patch import f2py_compatible_to_string
+from process.fortran import numerics, global_variables, init_module, scan_module
+from process import final
 import numpy as np
 from process.evaluators import Evaluators
 from abc import ABC, abstractmethod
@@ -157,7 +158,7 @@ class Vmcon(_Solver):
     :type _Solver: _Solver
     """
 
-    def solve(self) -> int:
+    def solve(self, optimiser) -> int:
         """Optimise using new VMCON.
 
         :return: solver error code
@@ -170,8 +171,17 @@ class Vmcon(_Solver):
             B = np.identity(numerics.nvar) * self.b
 
         def _solver_callback(i: int, _result, _x, convergence_param: float):
+            self.objf = _result.f
+            self.x = _x
+            self.conf = np.hstack((_result.eq, _result.ie))
+            scan_module.post_optimise(1)
+            optimiser.output()
+            final.finalise(self.evaluators.caller.models, 6)
+            init_module.new_mfile(f"{i+1}")
+
             numerics.nviter = i + 1
             global_variables.convergence_parameter = convergence_param
+
             print(
                 f"{i+1} | Convergence Parameter: {convergence_param:.3E}",
                 end="\r",
