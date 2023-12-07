@@ -157,7 +157,7 @@ class Vmcon(_Solver):
     :type _Solver: _Solver
     """
 
-    def solve(self) -> int:
+    def solve(self, optimiser) -> int:
         """Optimise using new VMCON.
 
         :raises NotImplementedError: not currently implemented
@@ -170,8 +170,12 @@ class Vmcon(_Solver):
         if self.b is not None:
             B = np.identity(numerics.nvar) * self.b
 
-        def _solver_callback(i: int, _x, _result, convergence_param: float):
+        def _solver_callback(i: int, _result, _x, convergence_param: float):
+            self.objf = _result.f
+            self.x = _x
+            self.conf = np.hstack((_result.eq, _result.ie))
             scan_module.post_optimise(1)
+            optimiser.output()
             final.finalise(self.evaluators.caller.models, 6)
             init_module.new_mfile(f"{i+1}")
 
