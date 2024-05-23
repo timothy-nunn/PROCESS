@@ -75,7 +75,7 @@ module current_drive_variables
   !!
   !!  - =0 O-mode
   !!  - =1 X-mode
-  
+
   real(dp) :: enbeam
   !! neutral beam energy (keV) (`iteration variable 19`)
 
