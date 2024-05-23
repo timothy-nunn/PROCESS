@@ -127,7 +127,6 @@ jobs:
   run-tracking-inputs:
     runs-on: ubuntu-latest
     needs: make
-    if: github.ref == 'refs/heads/main'
     steps:
       - uses: actions/checkout@v3
       - name: Download build artifacts
@@ -173,7 +172,6 @@ jobs:
       cancel-in-progress: false
     runs-on: ubuntu-latest
     needs: run-tracking-inputs
-    if: github.ref == 'refs/heads/main'
     steps:
       - uses: actions/checkout@v3
       - name: Download build artifacts
@@ -216,16 +214,6 @@ jobs:
         with:
           name: tracking-html
           path: tracking.html
-      - name: Setup Git identity
-        run: |
-          sudo git config --global user.email "${{ github.triggering_actor }}@github.runner"
-          sudo git config --global user.name "${{ github.job }}"
-      - name: Commit and push tracking data
-        run: |
-          cd process-tracking-data
-          git add .
-          git commit -m "${{ github.run_id }}-${{ github.run_number }}-${{ github.run_attempt }}"
-          git push
 
   docs:
     concurrency:
@@ -233,7 +221,6 @@ jobs:
       cancel-in-progress: false
     runs-on: ubuntu-latest
     needs: tracking
-    if: github.ref == 'refs/heads/main'
     steps:
       - uses: actions/checkout@v3
         with:
