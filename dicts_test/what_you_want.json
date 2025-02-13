@@ -1,0 +1,37 @@
+{
+    "DICT_DEFAULT": {
+        "example_double": 0.0,
+        "example_double_array": null,
+        "example_double_array_uninit": null,
+        "example_double_nodescr": 15.0,
+        "example_double_uninit": null,
+        "example_int": 5.0,
+        "example_int_uninit": null,
+        "example_string": "'string____'",
+        "example_string_uninit": null
+    },
+    "DICT_DESCRIPTIONS": {
+        "example_double": "an example double",
+        "example_double_array": "an example double array",
+        "example_double_array_uninit": "",
+        "example_double_nodescr": "",
+        "example_double_uninit": "another example double (uninitialised)",
+        "example_int": "and example integer\n with a description over two lines",
+        "example_int_uninit": "yet another integer",
+        "example_string": "and example string",
+        "example_string_uninit": "another example string (uninitialised)"
+    },
+    "DICT_MODULE": {
+        "example_module": [
+            "example_double",
+            "example_double_nodescr",
+            "example_double_uninit",
+            "example_double_array",
+            "example_double_array_uninit",
+            "example_int",
+            "example_int_uninit",
+            "example_string",
+            "example_string_uninit"
+        ]
+    }
+}

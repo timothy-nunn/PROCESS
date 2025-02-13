@@ -242,6 +242,7 @@ def init_all_module_vars():
     fortran.cs_fatigue_variables.init_cs_fatigue_variables()
     fortran.blanket_library.init_blanket_library()
     fortran.dcll_module.init_dcll_module()
+    fortran.example_module.init_example_variables()
 
     fortran.init_module.init_fortran_modules()
 

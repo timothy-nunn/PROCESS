@@ -116,6 +116,7 @@ LIST(APPEND PROCESS_SRCS
     stellarator.f90
     stellarator_configuration.f90
     input.f90
+    example_module.f90
 )
 
 PREPROCESS()

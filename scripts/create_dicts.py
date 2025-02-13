@@ -644,6 +644,8 @@ def dict_ixc2nsweep():
 
     ixc2nsweep = {}
     file = SOURCEDIR + "/scan.f90"
+    if not Path(file).exists():
+        return {}
     # slice the file to get the switch statement relating to nsweep
     lines = slice_file(file, r"select case \(nwp\)", r"case default")
 
@@ -727,6 +729,8 @@ def dict_icc_full():
     di = {}
 
     # get slice of file from ":: lablcc" to a blank line
+    if not Path(SOURCEDIR + "/numerics.f90").exists():
+        return {}
     lcctext = slice_file(SOURCEDIR + "/numerics.f90", r"::\slablcc", r"^$")
 
     regexp = r"""
@@ -806,6 +810,8 @@ def dict_nsweep2varname():
 
     di = {}
     file = SOURCEDIR + "/scan.f90"
+    if not Path(file).exists():
+        return {}
 
     # slice the file to get the switch statement relating to nsweep
     lines = slice_file(file, r"select case \(nwp\)", r"case default")
@@ -847,6 +853,9 @@ def dict_ixc_full():
     Example dictionary entry:
         DICT_IXC_FULL['5'] = {'name' : 'beta', 'lb' : 0.001, 'ub' : 1.0}
     """
+
+    if not Path(SOURCEDIR + "/iteration_variables.f90").exists():
+        return {}
 
     with open(SOURCEDIR + "/iteration_variables.f90") as my_file:
         lines = my_file.readlines()
