@@ -39,8 +39,14 @@ def data_structure_dicts():
 
     for a, b in pairwise(example_module_tree.body):
         if isinstance(a, ast.AnnAssign):
+            # for each variable in the file, get the initial value
+            # (either is None, or value initialised in init_example_variables fn)
+            # set default to be None if variable is not being initialised eg if you
+            # just have `example_double: float` instead of `example_double: float = None`
+            initial_values_dict[a.target.id] = getattr(
+                example_module, a.target.id, None
+            )
             # get the variable names
-            initial_values_dict[a.target.id] = a.value.value
             var_name = a.target.id
             # add variable name to the list if not already there
             if var_name not in variable_names:
@@ -51,10 +57,6 @@ def data_structure_dicts():
             # if no docstring for variable, have a blank description
             if not isinstance(b, ast.Expr):
                 var_names_and_descriptions[a.target.id] = ""
-
-    # for each variable in the file, get the initial value (either is None, or value initialised in init_example_variables fn)
-    for var in variable_names:
-        initial_values_dict[var] = getattr(example_module, var)
 
     dict_module_entry["example_module"] = variable_names
 
@@ -67,7 +69,7 @@ def data_structure_dicts():
     new_dict = {**default_dict, **descriptions_dict, **module_dict}
 
     # create json file
-    with open(Path("./dicts_test/data/example_dicts_recreated3.json"), "w") as f:
+    with open(Path("./dicts_test/data/example_dicts_recreated.json"), "w") as f:
         json.dump(new_dict, f, indent=4)
 
 
