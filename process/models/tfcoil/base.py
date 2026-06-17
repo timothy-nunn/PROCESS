@@ -8,6 +8,7 @@ import logging
 from dataclasses import dataclass
 from enum import IntEnum
 from types import DynamicClassAttribute
+from typing import TYPE_CHECKING
 
 import numba
 import numpy as np
@@ -15,10 +16,13 @@ import numpy as np
 from process.core import constants
 from process.core import process_output as po
 from process.core.exceptions import ProcessValueError
-from process.core.model import DataStructure, Model
+from process.core.model import Model
 from process.data_structure.build_variables import TFCSRadialConfiguration
 from process.data_structure.pfcoil_variables import PFConductorModel
 from process.data_structure.physics_variables import DivertorNumberModels
+
+if TYPE_CHECKING:
+    from process.core.data_structure import DataStructure
 
 logger = logging.getLogger(__name__)
 

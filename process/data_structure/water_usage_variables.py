@@ -8,9 +8,11 @@ https://www.thermal-engineering.org/what-is-latent-heat-of-vaporization-definiti
 
 from dataclasses import dataclass
 
+from process.core.metadata import PROCESSModelData, process_variable_field
+
 
 @dataclass(slots=True)
-class WaterUseData:
+class WaterUseData(PROCESSModelData):
     airtemp: float = 15.0
     """ambient air temperature (degrees Celsius)"""
     watertemp: float = 5.0
@@ -41,7 +43,11 @@ class WaterUseData:
     volperenergy: float = 0.0
     """volume evaporated by units of heat energy (m3/MJ)"""
 
-    waterusetower: float = 0.0
+    waterusetower: float = process_variable_field(
+        default=0.0,
+        short_description="Volume used in cooling tower (m3/day)",
+        units="m3",
+    )
     """total volume of water used in cooling tower (m3)"""
 
     wateruserecirc: float = 0.0

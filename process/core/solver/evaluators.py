@@ -4,7 +4,7 @@ import math
 import numpy as np
 
 from process.core.caller import Caller
-from process.core.model import DataStructure
+from process.core.data_structure import DataStructure
 
 logger = logging.getLogger(__name__)
 

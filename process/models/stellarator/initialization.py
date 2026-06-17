@@ -1,4 +1,4 @@
-from process.core.model import DataStructure
+from process.core.data_structure import DataStructure
 
 
 def st_init(data: DataStructure):

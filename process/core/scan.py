@@ -19,7 +19,8 @@ from process.data_structure.numerics import FiguresOfMerit, PROCESSRunMode
 from process.data_structure.scan_variables import IPNSCNS, NOUTVARS, ScanData
 
 if TYPE_CHECKING:
-    from process.core.model import DataStructure, Model
+    from process.core.data_structure import DataStructure
+    from process.core.model import Model
 
 logger = logging.getLogger(__name__)
 

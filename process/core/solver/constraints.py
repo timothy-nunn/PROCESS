@@ -6,8 +6,8 @@ from typing import ClassVar, Literal
 import numpy as np
 
 from process.core import constants
+from process.core.data_structure import DataStructure
 from process.core.exceptions import ProcessError, ProcessValueError
-from process.core.model import DataStructure
 from process.data_structure.build_variables import TFCSRadialConfiguration
 from process.models.physics.density_limit import DensityLimitModel
 from process.models.physics.exhaust import PlasmaExhaust

@@ -11,8 +11,8 @@ from numba import njit
 from scipy import integrate
 
 from process.core import constants
+from process.core.data_structure import DataStructure
 from process.core.exceptions import ProcessError, ProcessValueError
-from process.core.model import DataStructure
 from process.models.physics.plasma_profiles import PlasmaProfile
 
 logger = logging.getLogger(__name__)

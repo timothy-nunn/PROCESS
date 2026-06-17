@@ -116,8 +116,8 @@ class WaterUse(Model):
         if output:
             po.ovarre(
                 self.outfile,
-                "Volume used in cooling tower (m3/day)",
-                "(waterusetower)",
+                self.data.water_use.metadata["waterusetower"].short_description,
+                f"({self.data.water_use.metadata['waterusetower'].name})",
                 self.data.water_use.waterusetower,
                 "OP ",
             )
