@@ -45,15 +45,23 @@ class WaterUseData(PROCESSModelData):
 
     waterusetower: float = process_variable_field(
         default=0.0,
-        short_description="Volume used in cooling tower (m3/day)",
-        units="m3",
+        short_description="Volume used in cooling tower",
+        units="m3/day",
     )
     """total volume of water used in cooling tower (m3)"""
 
-    wateruserecirc: float = 0.0
+    wateruserecirc: float = process_variable_field(
+        default=0.0,
+        short_description="Volume used in recirculating water system",
+        units="m3/day",
+    )
     """total volume of water used in recirculating system (m3)"""
 
-    wateruseonethru: float = 0.0
+    wateruseonethru: float = process_variable_field(
+        default=0.0,
+        short_description="Volume used in once-through water system",
+        units="m3/day",
+    )
     """total volume of water used in once-through system (m3)"""
 
 
