@@ -14,7 +14,7 @@ class PROCESSVariableMetadata:
     name: str
     short_description: str | None = None
     symbol: str | None = None
-    units: str | None
+    units: str | None = None
     _index: int = _MISSING
 
 
@@ -55,6 +55,7 @@ class PROCESSModelData:
             self._metadata[f.name] = metadata
 
     def get_field(self, variable: int | str):
+        """Returns a dataclass field by index or by name."""
         if isinstance(variable, int):
             return fields(self)[variable]
         if isinstance(variable, str):
@@ -68,9 +69,14 @@ class PROCESSModelData:
                 raise ProcessValueError(error_msg)
         else:
             error_msg = "'variable' must either be a string or integer."
-            raise TypeError
+            raise TypeError(error_msg)
 
-    def get_formatted_outputs(self):
+    def get_formatted_outputs(self) -> list[tuple[str, str, Any, str]]:
+        """Formats the MFILE output strings for this model.
+
+        The returned tuple from this function provides the exact arguments
+        in the correct order that `ovarre` would expect.
+        """
         outputs = []
         for var_name, var_metadata in self._metadata.items():
             value = getattr(self, var_name)
