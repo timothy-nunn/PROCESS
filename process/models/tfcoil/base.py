@@ -15,6 +15,7 @@ import numpy as np
 
 from process.core import constants
 from process.core import process_output as po
+from process.core.data_structure.parameter import unwrap_parameter
 from process.core.exceptions import ProcessValueError
 from process.core.model import Model
 from process.data_structure.build_variables import TFCSRadialConfiguration
@@ -2069,6 +2070,7 @@ class TFCoil(Model):
         return th_cond
 
     @staticmethod
+    @unwrap_parameter
     @numba.njit(cache=True)
     def tf_coil_self_inductance(
         dr_tf_inboard: float,
@@ -2225,6 +2227,7 @@ class TFCoil(Model):
         )
 
     @staticmethod
+    @unwrap_parameter
     @numba.njit(cache=True)
     def stresscl(
         n_tf_layer,
