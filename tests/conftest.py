@@ -4,11 +4,19 @@ Defines fixtures that will be shared across all test modules.
 """
 
 import os
-import pytest
-from system_check import system_compatible
+import traceback
 import warnings
+
+import matplotlib as mpl
+import pytest
 from _pytest.fixtures import SubRequest
-from process.fortran import error_handling as eh
+from click.testing import CliRunner
+from system_check import system_compatible
+
+from process import main
+from process.core.data_structure.base import DataStructure
+from process.core.log import logging_model_handler
+from process.main import Models
 
 
 def pytest_addoption(parser):
@@ -34,8 +42,24 @@ def pytest_addoption(parser):
         "--opt-params-only",
         action="store_true",
         default=False,
-        help="Only regression test optimisation parameters: useful for solver comparisons",
+        help="Only regression test optimisation parameters: useful for solver "
+        "comparisons",
     )
+    parser.addoption(
+        "--plotting-on",
+        action="store_true",
+        default=False,
+        help="switch on interactive plotting in tests",
+    )
+
+
+def pytest_configure(config):
+    """
+    Configures pytest based on command line options.
+    """
+    if not config.option.plotting_on:
+        # We're not displaying plots so use a display-less backend
+        mpl.use("Agg")
 
 
 @pytest.fixture
@@ -90,31 +114,36 @@ def opt_params_only(request: SubRequest) -> bool:
     return request.config.getoption("--opt-params-only")
 
 
-@pytest.fixture(scope="session", autouse=True)
-def precondition(request):
-    """Check a user for an outdated system
-    Warn a user if their system is outdated and could have
-    regression test floating point issues.
-
-    Exits the test suite if trying to overwrite tests
-    to stop inaccurate test assets being written.
-
-    e.g. "pytest --overwrite" returns True here.
-    :param request: request fixture to access CLI args
-    :type request: SubRequest
+@pytest.fixture
+def skip_if_incompatible_system():
+    """Skip the test using this fixture if it is detected that their system is
+    incompatible and may raise errors because of floating-point rounding error.
     """
-    compatible = system_compatible()
-    if compatible:
+    if not system_compatible():
+        pytest.skip(
+            "This test could fail on your system due to differences caused by "
+            "floating-point rounding differences in np.linalg.solve"
+        )
+
+
+@pytest.fixture(scope="session", autouse=True)
+def running_on_compatible_system_warning():
+    """Check for an outdated system
+
+    Warn the user if their system is outdated and could have test floating point issues.
+    """
+    if system_compatible():
         return
     warnings.warn(
         """
-        \u001b[33m\033[1mYou are running the PROCESS test suite on an outdated system.\033[0m
-        This can cause floating point rounding errors in regression tests.
+        \u001b[33m\033[1mYou are running the PROCESS test suite on an incompatible
+         system.\033[0m
+        This can cause floating point rounding errors in tests.
 
-        Please see documentation for information on running PROCESS (and tests)
-        using a Docker/Singularity container.
+        Some unit tests may be skipped!
         """,
         UserWarning,
+        stacklevel=2,
     )
 
 
@@ -125,8 +154,7 @@ def initialise_error_module():
     Initialise the error module initially otherwise segmentation faults can
     occur when tested subroutines raise errors.
     """
-    eh.init_error_handling()
-    eh.initialise_error_list()
+    logging_model_handler.clear_logs()
 
 
 @pytest.fixture
@@ -135,20 +163,97 @@ def reinitialise_error_module():
 
     If a subroutine raises an error and writes to error variables, this should
     be cleaned up when the test finishes to prevent any side-effects.
-
     """
     # TODO Perhaps this should be autoused by all tests? Specify use explicitly
     # for now for known error-raisers
     yield
-    eh.init_error_handling()
+    logging_model_handler.clear_logs()
 
 
 @pytest.fixture(autouse=True)
-def return_to_root():
+def return_to_root(request):
     """Various parts of PROCESS change directories and do not always change back.
     This fixture ensures that, at the end of each test, the cwd is reset to what it
     was at the beginning of the test.
     """
-    cwd = os.getcwd()
     yield
-    os.chdir(cwd)
+    os.chdir(request.config.invocation_dir)
+
+
+@pytest.fixture(autouse=True)
+def disable_package_logger(monkeypatch):
+    """Various parts of PROCESS change directories and do not always change back.
+    This fixture ensures that, at the end of each test, the cwd is reset to what it
+    was at the beginning of the test.
+    """
+    monkeypatch.setattr(main, "PACKAGE_LOGGING", False)
+
+
+@pytest.fixture(autouse=True)
+def _plot_show_and_close(request):
+    """Fixture to show and close plots
+
+    Notes
+    -----
+    Does not do anything if testclass marked with 'classplot'
+    """
+    import matplotlib.pyplot as plt  # noqa:PLC0415
+
+    cls = request.node.getparent(pytest.Class)
+
+    if cls and "classplot" in cls.keywords:
+        yield
+    else:
+        yield
+        clstitle = "" if cls is None else cls.name
+        for fig in list(map(plt.figure, plt.get_fignums())):
+            fig.suptitle(
+                f"{fig.get_suptitle()} {clstitle}::"
+                f"{request.node.getparent(pytest.Function).name}"
+            )
+        plt.show()
+        plt.close()
+
+
+@pytest.fixture(scope="class", autouse=True)
+def _plot_show_and_close_class(request):
+    """Fixture to show and close plots for marked classes
+
+    Notes
+    -----
+    Only shows and closes figures on classes marked with 'classplot'
+    """
+    import matplotlib.pyplot as plt  # noqa:PLC0415
+
+    if "classplot" in request.keywords:
+        yield
+        clstitle = request.node.getparent(pytest.Class).name
+
+        for fig in list(map(plt.figure, plt.get_fignums())):
+            fig.suptitle(f"{fig.get_suptitle()} {clstitle}")
+        plt.show()
+        plt.close()
+    else:
+        yield
+
+
+@pytest.fixture
+def process_models():
+    models = Models(DataStructure())
+    for model in models.models:
+        model.data = models.data
+    return models
+
+
+@pytest.fixture
+def cli_runner():
+    def _cli_runner(command, args: list[str] | None = None, exit_code=0):
+
+        result = CliRunner(catch_exceptions=False).invoke(command, args=args or [])
+        assert result.exit_code == exit_code, (
+            f"{result.exception} "
+            f"{''.join(traceback.format_exception(result.exc_info[1]))}"
+        )
+        return result
+
+    return _cli_runner

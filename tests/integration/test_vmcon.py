@@ -5,26 +5,25 @@ behaviour with different initial guesses for the solution vector x
 Expected answers for tests 1 to 3 are given in
 VMCON documentation ANL-80-64
 """
-from process.evaluators import Evaluators
-from process.fortran import init_module
-from process.fortran import error_handling
-import pytest
-import numpy as np
+
 import logging
 from abc import ABC, abstractmethod
-from process.solver import get_solver
+
+import numpy as np
+import pytest
+
+from process.core.data_structure.base import DataStructure
+from process.core.solver.evaluators import Evaluators
+from process.core.solver.solver import get_solver
+from process.data_structure.numerics import SolverOutputCondition
 
 # Debug-level terminal output logging
 logger = logging.getLogger(__name__)
 
-# Provide helpful errors in the event of a failed Vmcon test
-error_handling.initialise_error_list()
 
-
-@pytest.fixture(autouse=True)
-def reinit():
-    """Re-initialise Fortran module variables before each test is run."""
-    init_module.init_all_module_vars()
+@pytest.fixture
+def data_structure_obj():
+    return DataStructure()
 
 
 class Case:
@@ -45,13 +44,15 @@ class Case:
 
 
 class SolverArgs:
-    def __init__(self):
+    def __init__(self, n=2):
         """Initialise some common arguments to the solver adapter.
+
+        :param n: number of input variables (default 2)
+        :type n: int
 
         These arguments are shared between some of the test cases.
         """
         # No bounds on x values set
-        n = 2
         self.x = np.zeros(n)
         self.ilower = np.zeros(n)
         self.iupper = np.zeros(n)
@@ -74,7 +75,7 @@ class ExpectedResult:
         self.errlm = 0.0
         self.errcom = 0.0
         self.errcon = 0.0
-        self.ifail = 1
+        self.ifail = SolverOutputCondition.CONVERGED
 
 
 class CustomFunctionEvaluator(ABC, Evaluators):
@@ -91,17 +92,13 @@ class CustomFunctionEvaluator(ABC, Evaluators):
         initialised.
         """
 
-        pass
-
     @abstractmethod
     def fcnvmc1(self):
         """Function evaluator."""
-        pass
 
     @abstractmethod
     def fcnvmc2(self):
         """Gradient function evaluator."""
-        pass
 
 
 class Evaluator1(CustomFunctionEvaluator):
@@ -118,7 +115,8 @@ class Evaluator1(CustomFunctionEvaluator):
     :type CustomFunctionEvaluator: CustomFunctionEvaluator
     """
 
-    def fcnvmc1(self, n, m, x, ifail):
+    @staticmethod
+    def fcnvmc1(n, m, x, ifail):
         """Function evaluator.
 
 
@@ -137,13 +135,15 @@ class Evaluator1(CustomFunctionEvaluator):
         :rtype: tuple(float, np.ndarray)
         """
         objf = (x[0] - 2.0) ** 2 + (x[1] - 1.0) ** 2
-        conf = np.array(
-            [x[0] - 2.0 * x[1] + 1.0, -0.25 * x[0] ** 2 - x[1] * x[1] + 1.0]
-        )
+        conf = np.array([
+            x[0] - 2.0 * x[1] + 1.0,
+            -0.25 * x[0] ** 2 - x[1] * x[1] + 1.0,
+        ])
 
         return objf, conf
 
-    def fcnvmc2(self, n, m, x, lcnorm):
+    @staticmethod
+    def fcnvmc2(n, m, x, lcnorm):
         """Gradient function evaluator.
 
         Calculates the gradients of the objective and constraint functions at
@@ -180,7 +180,8 @@ class Evaluator2(CustomFunctionEvaluator):
     :type CustomFunctionEvaluator: CustomFunctionEvaluator
     """
 
-    def fcnvmc1(self, n, m, x, ifail):
+    @staticmethod
+    def fcnvmc1(n, m, x, ifail):
         """Function evaluator.
 
 
@@ -199,13 +200,15 @@ class Evaluator2(CustomFunctionEvaluator):
         :rtype: tuple(float, np.ndarray)
         """
         objf = (x[0] - 2.0) ** 2 + (x[1] - 1.0) ** 2
-        conf = np.array(
-            [x[0] - 2.0 * x[1] + 1.0, -0.25 * x[0] ** 2 - x[1] * x[1] + 1.0]
-        )
+        conf = np.array([
+            x[0] - 2.0 * x[1] + 1.0,
+            -0.25 * x[0] ** 2 - x[1] * x[1] + 1.0,
+        ])
 
         return objf, conf
 
-    def fcnvmc2(self, n, m, x, lcnorm):
+    @staticmethod
+    def fcnvmc2(n, m, x, lcnorm):
         """Gradient function evaluator.
 
         Calculates the gradients of the objective and constraint functions at
@@ -243,7 +246,8 @@ class Evaluator3(CustomFunctionEvaluator):
     :type CustomFunctionEvaluator: CustomFunctionEvaluator
     """
 
-    def fcnvmc1(self, n, m, x, ifail):
+    @staticmethod
+    def fcnvmc1(n, m, x, ifail):
         """Function evaluator.
 
 
@@ -266,7 +270,8 @@ class Evaluator3(CustomFunctionEvaluator):
 
         return objf, conf
 
-    def fcnvmc2(self, n, m, x, lcnorm):
+    @staticmethod
+    def fcnvmc2(n, m, x, lcnorm):
         """Gradient function evaluator.
 
         Calculates the gradients of the objective and constraint functions at
@@ -304,7 +309,8 @@ class Evaluator4(CustomFunctionEvaluator):
     :type CustomFunctionEvaluator: CustomFunctionEvaluator
     """
 
-    def fcnvmc1(self, n, m, x, ifail):
+    @staticmethod
+    def fcnvmc1(n, m, x, ifail):
         """Function evaluator.
 
         Calculates the objective and constraint functions at the
@@ -326,7 +332,8 @@ class Evaluator4(CustomFunctionEvaluator):
 
         return objf, conf
 
-    def fcnvmc2(self, n, m, x, lcnorm):
+    @staticmethod
+    def fcnvmc2(n, m, x, lcnorm):
         """Gradient function evaluator.
 
         Calculates the gradients of the objective and constraint functions at
@@ -359,7 +366,8 @@ class Evaluator5(CustomFunctionEvaluator):
     :type CustomFunctionEvaluator: CustomFunctionEvaluator
     """
 
-    def fcnvmc1(self, n, m, x, ifail):
+    @staticmethod
+    def fcnvmc1(n, m, x, ifail):
         """Function evaluator.
 
         Calculates the objective and constraint functions at the
@@ -381,7 +389,8 @@ class Evaluator5(CustomFunctionEvaluator):
 
         return objf, conf
 
-    def fcnvmc2(self, n, m, x, lcnorm):
+    @staticmethod
+    def fcnvmc2(n, m, x, lcnorm):
         """Gradient function evaluator.
 
         Calculates the gradients of the objective and constraint functions at
@@ -423,12 +432,12 @@ def get_case1():
     case = Case("1", Evaluator1())
 
     # Set up solver args for this case
-    neqns = 1
-    nineqns = 1
+    n_equality_constraints = 1
+    n_inequality_constraints = 1
     case.solver_args.x[0:2] = 2.0e0
     case.solver_args.n = 2
-    case.solver_args.m = neqns + nineqns
-    case.solver_args.meq = neqns
+    case.solver_args.m = n_equality_constraints + n_inequality_constraints
+    case.solver_args.meq = n_equality_constraints
 
     # Expected values
     case.exp.x = np.array([8.228756e-1, 9.114378e-1])
@@ -457,11 +466,11 @@ def get_case2():
     case = Case("2", Evaluator2())
 
     # Solver args for this case
-    neqns = 0
-    nineqns = 2
+    n_equality_constraints = 0
+    n_inequality_constraints = 2
     case.solver_args.n = 2
-    case.solver_args.m = neqns + nineqns
-    case.solver_args.meq = neqns
+    case.solver_args.m = n_equality_constraints + n_inequality_constraints
+    case.solver_args.meq = n_equality_constraints
     case.solver_args.x[0:2] = 2.0e0
 
     # Expected values
@@ -486,19 +495,19 @@ def get_case3():
     c1(x1,x2) = x1 + x2 - 3 = 0
     c2(x1,x2) = -x1**2/4 - x2**2 + 1 >= 0
 
-    Note that this test is supposed to fail with ifail=5
-    as there is no feasible solution
+    Note that this test is supposed to fail with ifail=SolverOutputCondition.NO_SOLUTION
+    (ifail = 5) as there is no feasible solution
     VMCON documentation ANL-80-64
     """
     # Create a case-specific Vmcon object with overridden fcnvmc1 and 2
     case = Case("3", Evaluator3())
 
     # Solver args for this case
-    neqns = 1
-    nineqns = 1
+    n_equality_constraints = 1
+    n_inequality_constraints = 1
     case.solver_args.n = 2
-    case.solver_args.m = neqns + nineqns
-    case.solver_args.meq = neqns
+    case.solver_args.m = n_equality_constraints + n_inequality_constraints
+    case.solver_args.meq = n_equality_constraints
     case.solver_args.x[0:2] = 2.0e0
 
     # Expected values
@@ -508,7 +517,7 @@ def get_case3():
     case.exp.vlam = np.array([0.0, 0.0])
     case.exp.errlg = 1.599997724349894
     case.exp.errcon = 8.0000000000040417e-01
-    case.exp.ifail = 5
+    case.exp.ifail = SolverOutputCondition.NO_SOLUTION
 
     return case
 
@@ -528,11 +537,11 @@ def get_case4():
     case = Case("4", Evaluator4())
 
     # Set up vmcon values for this case
-    neqns = 1
-    nineqns = 0
+    n_equality_constraints = 1
+    n_inequality_constraints = 0
     case.solver_args.n = 2
-    case.solver_args.m = neqns + nineqns
-    case.solver_args.meq = neqns
+    case.solver_args.m = n_equality_constraints + n_inequality_constraints
+    case.solver_args.meq = n_equality_constraints
     case.solver_args.xtol = 2.0e-8
     case.solver_args.x[0:2] = 1.0e0
     # N.B. results can flip to minimum instead of maximum
@@ -567,16 +576,17 @@ def get_case5():
     """
     # Create a case-specific Vmcon object with overridden fcnvmc1 and 2
     case = Case("5", Evaluator5())
+    case.solver_args = SolverArgs(n=1)
 
     # Set up vmcon values for this case
-    neqns = 1
-    nineqns = 0
+    n_equality_constraints = 1
+    n_inequality_constraints = 0
     case.solver_args.n = 1
-    case.solver_args.m = neqns + nineqns
-    case.solver_args.meq = neqns
-    case.solver_args.x = np.array(
-        [5.0]
-    )  # Try different values, e.g. 5.0, 2.0, 1.0, 0.0...
+    case.solver_args.m = n_equality_constraints + n_inequality_constraints
+    case.solver_args.meq = n_equality_constraints
+    case.solver_args.x = np.array([
+        5.0
+    ])  # Try different values, e.g. 5.0, 2.0, 1.0, 0.0...
 
     # Expected values
     case.exp.x = np.array([3.0])
@@ -600,7 +610,7 @@ def case(request):
     return case_fn()
 
 
-def test_vmcon(case, solver_name):
+def test_vmcon(case, solver_name, data_structure_obj):
     """Integration test for Vmcon.
 
     :param case: a Vmcon scenario and its expected result
@@ -616,7 +626,7 @@ def test_vmcon(case, solver_name):
         logger.debug(f"x[{i}] = {case.solver_args.x[i]}")
 
     # Configure solver for problem
-    solver = get_solver(solver_name)
+    solver = get_solver(data_structure_obj, solver_name)
     solver.set_evaluators(case.evaluator)
     solver.set_opt_params(case.solver_args.x)
     solver.set_bounds(
@@ -685,8 +695,8 @@ def log_failure(case):
     for i in range(case.vmcon.n):
         summ = case.vmcon.fgrd[i]
         for j in range(case.vmcon.m):
-            summ = summ - case.vmcon.vlam[j] * case.vmcon.cnorm[i, j]
-        errlg = errlg + abs(summ)
+            summ -= case.vmcon.vlam[j] * case.vmcon.cnorm[i, j]
+        errlg += abs(summ)
     logger.debug(f"{errlg}, {case.exp.errlg}")
 
     logger.debug("Lagrange multiplier error: calculated vs expected")
@@ -694,13 +704,13 @@ def log_failure(case):
     for i in range(case.vmcon.m):
         if (i <= case.vmcon.meq) or (case.vmcon.vlam[i] >= 0.0):
             continue
-        errlm = errlm + abs(case.vmcon.vlam[i])
+        errlm += abs(case.vmcon.vlam[i])
     logger.debug(f"{errlm}, {case.exp.errlm}")
 
     logger.debug("Complementarity error: calculated vs expected")
     errcom = 0.0
     for i in range(case.vmcon.m):
-        errcom = errcom + abs(case.vmcon.vlam[i] * case.vmcon.conf[i])
+        errcom += abs(case.vmcon.vlam[i] * case.vmcon.conf[i])
     logger.debug(f"{errcom}, {case.exp.errcom}")
 
     logger.debug("Constraint error: calculated vs expected")
@@ -708,5 +718,5 @@ def log_failure(case):
     for i in range(case.vmcon.m):
         if (i > case.vmcon.meq) and (case.vmcon.conf[i] >= 0.0):
             continue
-        errcon = errcon + abs(case.vmcon.conf[i])
+        errcon += abs(case.vmcon.conf[i])
     logger.debug(f"{errcon}, {case.exp.errcon}")

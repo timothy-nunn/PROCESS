@@ -1,45 +1,45 @@
-[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.8338226.svg)](https://doi.org/10.5281/zenodo.8338226)
-
+[![DOI](https://img.shields.io/badge/DOI-10.5281/zenodo.8335291-blue)](https://doi.org/10.5281/zenodo.8335291) [![codecov](https://codecov.io/gh/ukaea/process/graph/badge.svg?token=F94XDNUIX0)](https://codecov.io/gh/ukaea/process)
+[![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/ukaea/PROCESS/HEAD?urlpath=%2Fdoc%2Ftree%2Fexamples%2F)
 # PROCESS
 
 **Here are the [PROCESS docs](https://ukaea.github.io/PROCESS/).**
 
-PROCESS is the reactor systems code at the [UK Atomic Energy Authority](https://ccfe.ukaea.uk/). More information on PROCESS can be found on the PROCESS [webpage](https://ccfe.ukaea.uk/resources/process/).
+PROCESS is the reactor systems code at the [UK Atomic Energy Authority](https://www.ukaea.org/) (UKAEA). More information can be found on the PROCESS [webpage](https://www.ukaea.org/service/process/).
 
-PROCESS was originally a Fortran code, but is currently a mixture of Python and Python-wrapped Fortran; the eventual aim is to have an entirely Python code base. In order to use PROCESS, the Fortran must be compiled and a Python-Fortran interface generated for the Python to import. Once built, it can be installed and run as a Python package.
+PROCESS was originally a Fortran code, but is now a pure-Python command line program. PROCESS is still undergoing a significant restructure and, as such, **PROCESS version 3 is unstable and does not guarantee backward compatibility**. PROCESS version 4 will be the first major version to enforce backward-compatible API changes and will be released following a refactor of the data structure. 
 
 
 
-![Blender_and_output](./documentation/proc-pages/images/README_image.PNG)
-<center>Overview of some outputs for a DEMO-like reactor (3D image generated using Fusrr-pipeline).</center>
+![Blender_and_output](./documentation/source/images/README_image.PNG)
+<center>Overview of some outputs for a DEMO-like reactor.</center>
 
 
 ## Getting Started
-Please see the [installation guide](https://ukaea.github.io/PROCESS/installation/introduction/) and the [usage guide](https://ukaea.github.io/PROCESS/usage/running-process/). Once installed, the `examples` directory provides Jupyter notebooks for interactively demonstrating usage of PROCESS, which is a good place to start. The `examples/README.md` provides more help.
+Please see the [installation guide](https://ukaea.github.io/PROCESS/installation/installation/) and the [usage guide](https://ukaea.github.io/PROCESS/usage/running-process/). Once installed, take a look at the [examples page](https://ukaea.github.io/PROCESS/usage/examples/) for examples of how PROCESS can be run, and its results visualised. 
+
+If you wish to run the examples before installing, you can click on the `binder` badge at the top of the README, or 
+can click [here](https://mybinder.org/v2/gh/ukaea/PROCESS/HEAD?urlpath=%2Fdoc%2Ftree%2Fexamples%2F). Once loaded, you will be able to run the PROCESS examples in your web browser.
+
 
 ## Documentation
 To read about how the code works and the modules in it see the [documentation](https://ukaea.github.io/PROCESS/).
 
 ## Tracking and Testing
-Process uses a mixture of tracking and testing to ensure code reliability. Tests are run on each branch and ensure the output of keys functions are correct. Tracking, on the other hand, shows graphs of a variables changes over time, and what commit caused the change.
+Process uses a mixture of tracking and testing to ensure code reliability. Tests are run on each branch and ensure the output of key functions are correct. Tracking, on the other hand, shows graphs of changes to variables over time, and what commit caused the change.
 
 * Our tracker can be found here: https://ukaea.github.io/PROCESS/tracking.html
 * Documentation on testing can be found here: https://ukaea.github.io/PROCESS/development/testing/
 
 ## Development
-Please see the CONTRIBUTING.md for guidance on how to contribute to PROCESS. Further information is found in the development section of the [documentation](https://ukaea.github.io/PROCESS/).
+Please see the [CONTRIBUTING.md](https://github.com/ukaea/PROCESS/blob/main/CONTRIBUTING.md) for guidance on how to contribute to PROCESS. Further information is found in the development section of the [documentation](https://ukaea.github.io/PROCESS/development/git-usage/).
 
 ## Publications
 A list of publications using PROCESS is given [here](https://ukaea.github.io/PROCESS/publications), including two papers outlining the physics and engineering models in PROCESS.
 
 ## Citing PROCESS
-If you use PROCESS in your work, please cite it using the "Cite this repository" link in the "About" section of the repository.
+If you use PROCESS in your work, please cite it using the "Cite this repository" link in the "About" section of the repository. This will cite the latest version of PROCESS, if you are using a different release, please find the appropriate DOI on [PROCESS' Zenodo page](https://doi.org/10.5281/zenodo.8335291). To ensure reproducible research, we recommend you run an [official release of PROCESS](https://github.com/ukaea/PROCESS/releases) by checking out the appropriate git tag.
 
-## Contacts
-[James Morris](james.morris2@ukaea.uk)
+## Contact and Collaboration
+If you would like to get in touch with the PROCESS group for a more detailed discussion, please use the contact form on the [PROCESS webpage](https://www.ukaea.org/service/process/) to make contact with the UKAEA maintainers of PROCESS. 
 
-[Jonathan Maddock](jonathan.maddock@ukaea.uk)
-
-[Michael Kovari](michael.kovari@ukaea.uk)
-
-[Stuart Muldrew](stuart.muldrew@ukaea.uk)
+We can, at our discretion, provide some free modeller time without a formal collaboration agreement. This can help you towards converging your problem, and can be a good starting point for further collaboration; please contact us if you are interested. Alternatively, you can make an issue or discussion in line with our [contribution guide](CONTRIBUTING.md).

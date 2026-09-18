@@ -1,39 +1,63 @@
 """Provides the classes to find, download, and access tracked MFiles on
-a remote data repository
+a remote data repository.
 """
 
-import subprocess
-import requests
 import dataclasses
-import re
 import logging
-from typing import Optional
+import re
+import subprocess  # noqa: S404
 from pathlib import Path
 
+from platformdirs import user_cache_path
+
 logger = logging.getLogger(__name__)
+
+TEST_ASSET_CACHE_DIR = user_cache_path("PROCESS-regression-tests", "ukaea")
 
 
 @dataclasses.dataclass
 class TrackedMFile:
     hash: str
     scenario_name: str
-    download_link: str
+    location: Path
 
 
 class RegressionTestAssetCollector:
-    remote_repository_url = (
-        "https://api.github.com/repos/timothy-nunn/process-tracking-data/contents/"
-    )
-
-    def __init__(self) -> None:
+    def __init__(self, cache_location: Path = TEST_ASSET_CACHE_DIR):
+        self._cache_location = cache_location
         self._hashes = self._git_commit_hashes()
+        self._repo_dir = self._get_regression_assets()
         self._tracked_mfiles = self._get_tracked_mfiles()
 
-    def get_reference_mfile(
-        self, scenario_name: str, directory: Path, target_hash: Optional[str] = None
-    ):
+    def _get_regression_assets(self):
+        """Ensures the user has an up-to-date local copy of the regression
+        references by cloning/pulling the remote repository to a local cache.
+        """
+        repo_dir = self._cache_location / "process-tracking-data"
+        if not repo_dir.exists():
+            repo_dir.mkdir(parents=True)
+
+            subprocess.run(  # noqa: S602
+                "git clone https://github.com/timothy-nunn/process-tracking-data.git "
+                f"'{repo_dir.as_posix()}'",
+                shell=True,
+                check=True,
+            )
+        else:
+            subprocess.run(  # noqa: S602
+                "git pull",  # noqa: S607
+                shell=True,
+                check=True,
+                cwd=repo_dir,
+                capture_output=True,
+            )
+
+        return repo_dir
+
+    def get_reference_mfile(self, scenario_name: str, target_hash: str | None = None):
         """Finds the most recent reference MFile for `<scenario_name>.IN.DAT`
-        and downloads it to the `directory` with the name `ref.<scenario_name>.MFILE.DAT`.
+        and downloads it to the `directory` with the name
+        `ref.<scenario_name>.MFILE.DAT`.
 
         Providing a `target_hash` will ONLY return a reference MFILE that exactly
         matches the requested commit hash.
@@ -47,32 +71,31 @@ class RegressionTestAssetCollector:
         will be downloaded, if available.
         :type target_hash:
 
-        :returns: Path to the downloaded reference MFile, if no reference MFile can be found,
+        :returns: Path to the downloaded reference MFile, if no reference MFile can be
+        found,
         `None` is returned.
         :rtype: Path
         """
-        reference_mfile_location = directory / f"ref.{scenario_name}.MFILE.DAT"
+
         for mf in self._tracked_mfiles:
             if (mf.scenario_name == scenario_name and target_hash is None) or (
                 mf.scenario_name == scenario_name and target_hash == mf.hash
             ):
-                with open(reference_mfile_location, "w") as f:
-                    f.write(requests.get(mf.download_link).content.decode())
-
-                logger.info(f"Reference MFile found for commit {mf.hash}")
-                return reference_mfile_location
+                return mf.location
 
         return None
 
-    def _git_commit_hashes(self):
+    @classmethod
+    def _git_commit_hashes(cls):
         """Returns the list of commit hashes.
 
         :returns: a list of commit hashes from 'git log'
         :rtype: list[str]
         """
         return (
-            subprocess.run(
-                'git log --format="%H"',
+            subprocess  # noqa: S602
+            .run(
+                'git log --format="%H"',  # noqa: S607
                 shell=True,
                 capture_output=True,
                 check=True,
@@ -82,22 +105,20 @@ class RegressionTestAssetCollector:
         )
 
     def _get_tracked_mfiles(self):
-        """Gets a list of tracked MFiles from the remote repository.
+        """Gets a list of tracked MFiles.
 
         :returns: a list of tracked MFiles sorted to match the order of
         hashes returned from `_git_commit_hashes`.
         :rtype: list[TrackedMFile]
         """
-        repository_files = requests.get(self.remote_repository_url).json()
-
         # create a list of tracked MFiles from the list of all files
-        # in the remote repository.
+        # in the repository.
         # Only keep TrackedMFiles that are tracked for a commit on the
         # current branch. This stops issues arising from main being
         # ahead of the feature branch and having newer tracks.
         tracked_mfiles = [
             mfile
-            for f in repository_files
+            for f in self._repo_dir.glob("*.DAT")
             if (mfile := self._get_tracked_mfile(f)) is not None
             and mfile.hash in self._hashes
         ]
@@ -109,7 +130,7 @@ class RegressionTestAssetCollector:
         )
 
     @staticmethod
-    def _get_tracked_mfile(json_data):
+    def _get_tracked_mfile(file: Path):
         """Converts JSON data of a file tracked on GitHub into a
         `TrackedMFile`, if appropriate
 
@@ -121,12 +142,10 @@ class RegressionTestAssetCollector:
         tracked mfile.
         :rtype: TrackedMFile | None
         """
-        rematch = re.match(r"([a-zA-Z0-9_.]+)_MFILE_([a-z0-9]+).DAT", json_data["name"])
+        rematch = re.match(r"([a-zA-Z0-9_.]+)_MFILE_([a-z0-9]+).DAT", file.name)
 
         if rematch is None:
             return None
         return TrackedMFile(
-            hash=rematch.group(2),
-            scenario_name=rematch.group(1),
-            download_link=json_data["download_url"],
+            hash=rematch.group(2), scenario_name=rematch.group(1), location=file
         )
