@@ -2,10 +2,12 @@
 
 Define fixtures that will be shared across integration test modules.
 """
-import pytest
+
+import os
 from pathlib import Path
 from shutil import copy
-import os
+
+import pytest
 
 
 @pytest.fixture
@@ -29,17 +31,23 @@ def temp_data(tmp_path):
 
 
 @pytest.fixture
-def temp_data_cwd(temp_data):
+def temp_data_cwd(temp_data: Path):
     """Change cwd to temp_data dir, then yield it.
 
     Used when testing command-line args that look for files in the cwd.
-    :param temp_data: temporary path containing data files
-    :type temp_data: Path
-    :yield: temporary path containing data files
-    :rtype: Path
+
+    Parameters
+    ----------
+    temp_data:
+        temporary path containing data files
+
+    Yields
+    ------
+    :
+        temporary path containing data files
     """
     # Setup by changing cwd to temp_data and yielding it
-    old_wd = os.getcwd()
+    old_wd = Path.cwd()
     os.chdir(temp_data)
     yield temp_data
 
@@ -68,7 +76,7 @@ def scan_mfile_name():
 
 
 @pytest.fixture
-def scan_2D_mfile_name():
+def scan_2d_mfile_name():
     """Return the name of a 2D scan mfile to test.
 
     :return: name of the mfile

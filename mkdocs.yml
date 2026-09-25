@@ -1,17 +1,17 @@
 ---
 site_name: PROCESS
-docs_dir: documentation/proc-pages/
+docs_dir: documentation/source
 nav:
   - Getting Started:
       - About: index.md
       - Installation:
-          - Introduction: installation/introduction.md
-          - Installation on Ubuntu/Windows: installation/installation-ubuntu.md
-          - Installation on CSD3: installation/csd3-for-process.md
+          - Installation: installation/installation.md
           - Visual Studio Code: installation/vs-code.md
       - Usage:
           - Running PROCESS: usage/running-process.md
-          - Examples: usage/examples.md
+          - Examples:
+              - Examples of running PROCESS: usage/examples.md
+              - examples/*.ex.py
           - Troubleshooting: usage/troubleshooting.md
           - Plotting: usage/plotting.md
           - Tracking: tracking.html
@@ -20,25 +20,21 @@ nav:
           - Output: io/output-guide.md
           - Python Libraries: io/python-lib-guide.md
           - Utilities: io/utilities.md
-          - Variable Descriptions: io/vardes.md
   - Development:
       - Git:
           - Usage: development/git-usage.md
           - Pre-commit: development/pre-commit.md
           - Continuous Integration: development/ci-guide.md
+          - Versioning: development/versioning.md
       - Maintenance:
           - Testing: development/testing.md
           - Debugging: development/debugging.md
-          - Tools: development/tools.md
       - Code modification:
           - Adding Variables & Constraints: development/add-vars.md
-          - Adding Physics and Engineering Variables to Python: development/annotated-variable.md
           - Python Optimisation and Numba: development/numba.md
       - Style:
           - Standards: development/standards.md
-          - F2Py Standards: development/f2py-standards.md
-      # - Versioning: development/versioning.md
-  - Reference:
+  - Models:
       - Physics Models:
           - Plasma:
               - Overview: physics-models/plasma_overview.md
@@ -48,23 +44,49 @@ nav:
                   - Density Profile: physics-models/profiles/plasma_density_profile.md
                   - Temperature Profile: physics-models/profiles/plasma_temperature_profile.md
                   - Profile Base Class: physics-models/profiles/plasma_profiles_abstract_class.md
-              - Fusion Reactions: physics-models/plasma_reactions.md
-              - Beta Limit: physics-models/plasma_beta.md
-              - Fast Alpha: physics-models/plasma_alpha.md
+              - Fusion Reactions:
+                  - Overview: physics-models/fusion_reactions/plasma_reactions.md
+                  - Beam reactions: physics-models/fusion_reactions/beam_reactions.md
+                  - Bosch-Hale Methods: physics-models/fusion_reactions/plasma_bosch_hale.md
+              - Magnetic Fields: physics-models/plasma_magnetic_fields.md
+              - Beta Limit:
+                  - Overview: physics-models/plasma_beta/plasma_beta.md
+                  - Fast Alpha: physics-models/plasma_beta/plasma_alpha_beta_contribution.md
               - Density Limit: physics-models/plasma_density.md
-              - Composition & Impurities: physics-models/plasma_radiation_impurities.md
-              - Radiation: physics-models/plasma_radiation_impurities.md
-              - Plasma Current: physics-models/plasma_current.md
+              - Composition & Impurities: physics-models/plasma_composition.md
+              - Radiation: physics-models/plasma_radiation.md
+              - Plasma Current:
+                  - Overview: physics-models/plasma_current/plasma_current.md
+                  - Bootstrap Current: physics-models/plasma_current/bootstrap_current.md
+                  - Diamagnetic Current: physics-models/plasma_current/diamagnetic_current.md
+                  - Pfirsch-Schlüter Current: physics-models/plasma_current/pfirsch_schlüter_current_drive.md
+                  - Inductive Current:
+                      - Inductive Current: physics-models/plasma_current/inductive_plasma_current.md
+                      - Plasma Inductance: physics-models/plasma_current/plasma_inductance.md
+                      - Plasma Resistive Heating: physics-models/plasma_current/plasma_resistive_heating.md
               - Confinement time: physics-models/plasma_confinement.md
+              - L-H transition: physics-models/plasma_h_mode.md
               - Plasma Core Power Balance: physics-models/plasma_power_balance.md
+              - Plasma Exhaust: physics-models/plasma_exhaust.md
+              - Plasma Scrape-off Layer: physics-models/plasma_scrape_off_layer.md
+              - Detailed Plasma Physics: physics-models/detailed_physics.md
           - Pulsed Plant Operation: physics-models/pulsed-plant.md
       - Engineering Models:
           - Machine Build: eng-models/machine-build.md
           - Structural Components: eng-models/structural-components.md
           - Buildings: eng-models/buildings.md
-          - First Wall/Blanket: eng-models/fw-blanket.md
-          - TF Coil: eng-models/tf-coil.md
+          - First Wall/Blanket:
+              - Overview: eng-models/fw-blanket.md
+              - Blanket:
+                  - Overview: eng-models/blanket_overview.md
+                  - CCFE HCPB: eng-models/ccfe_hcpb.md
+
+          - TF Coil:
+              - Overview: eng-models/tf-coil.md
+              - Resistive TF Coil: eng-models/tf-coil-resistive.md
+              - Superconducting TF Coil: eng-models/tf-coil-superconducting.md
           - PF Coil: eng-models/pf-coil.md
+          - Superconductors: eng-models/superconductors.md
           - Central Solenoid: eng-models/central-solenoid.md
           - Shield: eng-models/shield.md
           - Divertor: eng-models/divertor.md
@@ -98,6 +120,9 @@ nav:
           - Plant Availability: eng-models/plant-availability.md
           - Power Requirements: eng-models/power-requirements.md
           - Vacuum Vessel: eng-models/vacuum-vessel.md
+          - Generic Engineering Methods:
+              - Pumping: eng-models/generic_methods/pumping.md
+              - Materials: eng-models/generic_methods/materials.md
       - Unique Models:
           - Water Use: unique-models/water_use.md
           - Power Plant Building Sizes: unique-models/buildings_sizes.md
@@ -111,14 +136,7 @@ nav:
           - Stellarator Model: fusion-devices/stellarator.md
           - Inertial Fusion Energy Model: fusion-devices/inertial.md
   - Publications: publications.md
-  - Source Documentation:
-      - FORD Documentation: ford_site
-      - process: python/process.md
-      - process.io: python/process.io.md
-      - process.utilities: python/process.utilities.md
-      - process.fortran: python/process.fortran.md
-
-# repo_url: https://git.ccfe.ac.uk/process/process.git
+  - Source Documentation: source/reference/
 
 repo_url: https://github.com/UKAEA/PROCESS
 repo_name: UKAEA/PROCESS
@@ -126,7 +144,6 @@ repo_name: UKAEA/PROCESS
 copyright: Copyright &copy; 2023 United Kingdom Atomic Energy Authority
 
 theme:
-  # name: readthedocs
   name: material
   font:
     text: Roboto
@@ -172,6 +189,9 @@ markdown_extensions:
   - pymdownx.caret
   - pymdownx.critic
   - pymdownx.details
+  - pymdownx.highlight:
+      use_pygments: true
+      pygments_lang_class: true
   - pymdownx.inlinehilite
   - pymdownx.magiclink
   - pymdownx.mark
@@ -189,21 +209,30 @@ markdown_extensions:
 plugins:
   - autorefs
   - search
+  - gen-files:
+      scripts:
+        - documentation/scripts/gen_api_ref.py
+  - literate-nav:
+      nav_file: overview.md
   - glightbox:
       touchNavigation: true
       effect: zoom
       zoomable: true
       auto_caption: true
       caption_position: bottom
+  - literate-nav
   - git-revision-date-localized:
       enable_creation_date: true
-#     - mkdocstrings:
-#           handlers:
-#               python:
-#                   selection:
-#                       docstring_style: restructured-text
-#                   rendering:
-#                       show_source: false
-#                       show_root_heading: true
-
-extra_css: [stylesheets/vardes.css]
+  - mkdocs-jupyter:
+      execute: true
+      ignore: [scripts/**/*.py]
+  - mkdocstrings:
+      handlers:
+        python:
+          options:
+            docstring_style: numpy
+            show_if_no_docstring: true
+            members_order: source
+            filters:
+              - '!^_' # Ignore private members starting with underscore
+              - '!log'

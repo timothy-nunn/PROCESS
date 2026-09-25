@@ -1,24 +1,35 @@
 ---
-exclude: ^.*.DAT|.*.dat|.*.tex|.*.PPF|.*.FLD|.*.ps|ref_dicts.json|.*.md$
+exclude: ^.*\.DAT$|.*\.dat$|.*\.tex$|.*\.PPF$|.*\.FLD$|.*\.ps$|ref_dicts.json$|.*\.md$
 repos:
   - repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v4.2.0
+    rev: v6.0.0
     hooks:
       - id: end-of-file-fixer
       - id: trailing-whitespace
-      - id: check-docstring-first
       - id: check-merge-conflict
-      - id: debug-statements
-  - repo: https://github.com/psf/black
-    rev: 22.3.0
+
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.16.8
     hooks:
-      - id: black
-  - repo: https://github.com/PyCQA/flake8
-    rev: 4.0.1
-    hooks:
-      - id: flake8
+      - id: ruff-check
+        args: [--fix]
+      - id: ruff-format
+
   - repo: https://github.com/jumanjihouse/pre-commit-hook-yamlfmt
     rev: 0.2.3
     hooks:
       - id: yamlfmt
-        args: [--mapping, '2', --sequence, '4', --offset, '2']
+        args: [--mapping, '2', --sequence, '4', --offset, '2', --preserve-quotes]
+
+  - repo: https://github.com/biomejs/pre-commit
+    rev: v2.5.13
+    hooks:
+      - id: biome-format
+        types: [json]
+        args: [--indent-style=space, --indent-width=2, --line-width=89]
+
+  - repo: https://github.com/kynan/nbstripout
+    rev: 0.9.1
+    hooks:
+      - id: nbstripout
+        args: [--extra-keys=metadata.language_info.version]

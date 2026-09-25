@@ -2,25 +2,15 @@
 
 Define fixtures that will be shared across unit test modules.
 """
-import pytest
-from process import fortran
+
+import os
 from pathlib import Path
+from shutil import copy
+
+import pytest
 
 
-@pytest.fixture(scope="module", autouse=True)
-def reinit_fix():
-    """Re-initialise Fortran module variables before each test module is run.
-
-    This is run once before each module's unit tests are run (module scope),
-    ensuring that all Fortran module variables are set to initial values. The
-    individual test functions in each module then use mocking to avoid changing
-    the module variable values. autouse ensures that this fixture is used
-    automatically by any test function in the unit directory.
-    """
-    fortran.init_module.init_all_module_vars()
-
-
-@pytest.fixture()
+@pytest.fixture
 def input_file():
     """Input file for testing.
 
@@ -30,5 +20,59 @@ def input_file():
     data_path = Path(__file__).parent / "data"
     input_file = data_path / "large_tokamak_IN.DAT"
     # Convert input file path to absolute and string
-    input_file_path = str(Path(input_file).resolve())
-    return input_file_path
+    return str(Path(input_file).resolve())
+
+
+@pytest.fixture
+def temp_int_data(tmp_path: Path) -> Path:
+    """Copy data dir contents into temp dir for testing.
+
+    This uses integration test data
+
+    Any changes are discarded on fixture teardown.
+
+    Parameters
+    ----------
+    tmp_path:
+        temporary path fixture
+
+    Returns
+    -------
+    :
+        temporary path containing data files
+    """
+    data_path = Path(__file__).parent.parent / "integration" / "data"
+
+    for data_file in data_path.glob("*"):
+        dst = tmp_path / data_file.name
+        copy(data_file, dst)
+
+    # Return tmp_path, now containing files copied from data dir
+    return tmp_path
+
+
+@pytest.fixture
+def temp_int_data_cwd(temp_int_data: Path):
+    """Change cwd to temp_int_data dir, then yield it.
+
+    This uses integration test data
+
+    Used when testing command-line args that look for files in the cwd.
+
+    Parameters
+    ----------
+    temp_int_data:
+        temporary path containing data files
+
+    Yields
+    ------
+    :
+        temporary path containing data files
+    """
+    # Setup by changing cwd to temp_int_data and yielding it
+    old_wd = Path.cwd()
+    os.chdir(temp_int_data)
+    yield temp_int_data
+
+    # Teardown by changing back to previous dir
+    os.chdir(old_wd)

@@ -6,21 +6,24 @@ This will indicate any differences in the MFile contents caused
 by changes made off of main.
 """
 
-from pathlib import Path
-from dataclasses import dataclass
-from typing import List
-import shutil
 import logging
 import re
+import shutil
+from dataclasses import dataclass
+from pathlib import Path
 
 import pytest
-from process.main import main
-from process.io.mfile import MFile
-
+from filelock import FileLock
 from regression_test_assets import RegressionTestAssetCollector
 
+from process.core.io.mfile import MFile
+from process.data_structure.numerics import SolverOutputCondition
+from process.main import process_cli
 
 logger = logging.getLogger(__name__)
+
+PROCESS_PYTEST_LEVEL = logging.CRITICAL + 1
+logging.addLevelName(PROCESS_PYTEST_LEVEL, "\033[31m\033[1mPROCESS-PYTEST\033[0m")
 
 INPUT_FILES_FOLDER = Path(__file__).resolve().parent / "input_files"
 EXCLUSIONS = {
@@ -28,13 +31,38 @@ EXCLUSIONS = {
     "xcm",
     "convergence_parameter",
     "sqsumsq",
-    "nviter",
+    "n_solver_iterations",
     "commsg",
     "procver",
     r"sig_tf_r_max\(1\)",  # weird value, flips between 0 and very low?
     r"normres[0-9]+",
     r"nitvar[0-9]+",
+    "process_runtime",
 }
+
+
+class ProcessModelFilter(logging.Filter):
+    @staticmethod
+    def filter(record):
+        return 0 if record.levelno < logging.CRITICAL else 1
+
+
+@pytest.fixture
+def hide_model_logs():
+    """Hides model logs (process.model.*) from being reported if a regression test fails.
+
+    This fixture adds a filter to all of the handlers on the root logger before the tests
+    are run.
+    Modifying the logger handlers is crucial to avoid interfering with PROCESS model log
+    system which adds its own handlers when PROCESS is run (hence why this is not done
+    using the caplog fixture).
+    """
+    filter_ = ProcessModelFilter(name="process.models")
+    for handler in logging.getLogger().handlers:
+        handler.addFilter(filter_)
+    yield
+    for handler in logging.getLogger().handlers:
+        handler.removeFilter(filter_)
 
 
 @dataclass
@@ -46,9 +74,10 @@ class MFileVariableDifference:
 
 
 class RegressionTestScenario:
-    def __init__(self, input_file: Path) -> None:
+    def __init__(self, input_file: Path):
         """
-        Represents an input scenario (input file) to PROCESS that is to be regression tested.
+        Represents an input scenario (input file) to PROCESS that is to be regression
+        tested.
 
         :param input_file: absolute path of the input file (`<scenario_name>.IN.DAT`)
         :type input_file: Path
@@ -56,12 +85,13 @@ class RegressionTestScenario:
         self.input_file = input_file
         self.scenario_name = input_file.name.replace(".IN.DAT", "")
 
-    def run(self, solver: str):
+    def run(self, solver: str, cli_runner):
         """Runs the scenario input file using PROCESS"""
         logger.info(
-            f"Running regression test {self.scenario_name} using input file {self.input_file}"
+            f"Running regression test {self.scenario_name} using input file "
+            f"{self.input_file}"
         )
-        main(["--input", str(self.input_file), "--solver", solver])
+        cli_runner(process_cli, ["--input", str(self.input_file), "--solver", solver])
 
     def compare(
         self, reference_mfile_location: Path, tolerance: float, opt_params_only: bool
@@ -80,11 +110,11 @@ class RegressionTestScenario:
         mfile_location = self.input_file.parent / f"{self.scenario_name}.MFILE.DAT"
 
         assert mfile_location.exists(), (
-            f"PROCESS has not produced an MFile at the expected location {mfile_location}. "
-            "Ensure the Scenario has been run!"
+            "PROCESS has not produced an MFile at the expected location "
+            f"{mfile_location}. Ensure the Scenario has been run!"
         )
 
-        with open(mfile_location, "r") as f:
+        with open(mfile_location) as f:
             assert len(f.readlines()) > 0, (
                 "An MFile has been created, but it is empty, "
                 "indicating PROCESS did not run the input file successfully!"
@@ -93,53 +123,67 @@ class RegressionTestScenario:
         mfile = MFile(str(mfile_location))
         reference_mfile = MFile(str(reference_mfile_location))
 
-        assert (ifail := mfile.data["ifail"].get_scan(-1)) == 1 or mfile.data[
-            "ioptimz"
-        ].get_scan(
-            -1
-        ) == -2, f"ifail of {ifail} indicates PROCESS did not solve successfully"
+        ifail = mfile.data["ifail"].get_scan(-1)
 
-        differences = self.mfile_value_changes(
-            reference_mfile, mfile, tolerance, opt_params_only
+        assert (
+            ifail == SolverOutputCondition.CONVERGED
+            or mfile.data["i_process_run_mode"].get_scan(-1) == -2
+        ), (
+            f"\033[0;36m ifail of {ifail} indicates PROCESS did not solve "
+            "successfully\033[0m"
         )
-        if differences:
-            differences = sorted(
-                differences, key=lambda i: i.percentage_change, reverse=True
-            )
-
-            logger.warning(
-                f"{'Variable':20}\t{'Ref':>10}\t{'New':>10}\t{'% Change':>10}"
-            )
-            logger.warning("-" * 60)
-            for diff in differences:
-                logger.warning(
-                    f"{diff.name:20}\t{diff.ref:10.3g}\t{diff.new:10.3g}\t{diff.percentage_change:10.2f}"
-                )
-
-            assert len(differences) == 0, (
-                f"{len(differences)} differences: the reference MFile contains different values "
-                "for some of the variables. See the warnings for a breakdown of the differences."
-            )
 
         mfile_keys = set(mfile.data.keys())
         reference_mfile_keys = set(reference_mfile.data.keys())
         key_mfile_not_ref = mfile_keys - reference_mfile_keys
         key_ref_not_mfile = reference_mfile_keys - mfile_keys
 
-        assert not key_ref_not_mfile, (
-            "Reference MFile contains variables that are not present in "
-            f"the MFILE: {key_ref_not_mfile}"
+        key_ref_not_mfile_msg = (
+            "\033[0;35m Reference MFile contains variables that are not present in "
+            f"the MFILE: {key_ref_not_mfile} \033[0m"
         )
+        if key_ref_not_mfile:
+            logger.log(PROCESS_PYTEST_LEVEL, key_ref_not_mfile_msg)
 
-        assert not key_mfile_not_ref, (
-            "MFile contains variables that are not present in "
-            f"the reference MFILE: {key_mfile_not_ref}"
+        key_mfile_not_ref_msg = (
+            "\033[0;35m MFile contains variables that are not present in "
+            f"the reference MFILE: {key_mfile_not_ref} \033[0m"
         )
+        if key_mfile_not_ref:
+            logger.log(PROCESS_PYTEST_LEVEL, key_mfile_not_ref_msg)
+
+        differences = self.mfile_value_changes(
+            reference_mfile, mfile, tolerance, opt_params_only
+        )
+        if differences:
+            differences = sorted(
+                differences, key=lambda i: abs(i.percentage_change), reverse=True
+            )
+
+            logger.log(
+                PROCESS_PYTEST_LEVEL,
+                f"{'Variable':40}\t{'Ref':>10}\t{'New':>10}\t{'% Change':>10}",
+            )
+            logger.log(PROCESS_PYTEST_LEVEL, "-" * 80)
+            for diff in differences:
+                logger.log(
+                    PROCESS_PYTEST_LEVEL,
+                    f"{diff.name:40}\t{diff.ref:10.3g}\t{diff.new:10.3g}\t{diff.percentage_change:10.2f}",
+                )
+
+            assert len(differences) == 0, (
+                f"\033[0;32m {len(differences)} differences: the reference MFile "
+                "contains different values for some of the variables. See the warnings "
+                "for a breakdown of the differences.\033[0m"
+            )
+
+        assert not key_ref_not_mfile, key_ref_not_mfile_msg
+        assert not key_mfile_not_ref, key_mfile_not_ref_msg
 
     @staticmethod
     def mfile_value_changes(
         ref: MFile, new: MFile, tolerance: float, opt_params_only: bool
-    ) -> List[MFileVariableDifference]:
+    ) -> list[MFileVariableDifference]:
         """Calculates the differences between two MFiles.
 
         :param ref: the reference MFile
@@ -180,14 +224,11 @@ class RegressionTestScenario:
                 continue
 
             # Define relative tolerance
-            if tolerance == 0:
-                # Use pytest's default relative tolerance (1e-6)
-                # 0 tolerance causes floating-point discrepancies
-                # between local and CI runs
-                rel_tolerance = None
-            else:
-                # tolerance is a percentage, rel arg takes a fraction
-                rel_tolerance = tolerance / 100
+            # Use pytest's default relative tolerance (1e-6)
+            # 0 tolerance causes floating-point discrepancies
+            # between local and CI runs or tolerance
+            # is a percentage, rel arg takes a fraction
+            rel_tolerance = None if (tolerance == 0) else (tolerance / 100)
 
             try:
                 # Use pytest.approx for relative and absolute comparisons:
@@ -214,20 +255,26 @@ class RegressionTestScenario:
         return diffs
 
 
-@pytest.fixture(scope="session")
-def tracked_regression_test_assets():
+@pytest.fixture(scope="module")
+def tracked_regression_test_assets(tmp_path_factory, worker_id):
     """Session fixture providing a RegressionTestAssetCollector
-    for finding remote tracked MFiles.
+    for finding tracked MFiles.
 
-    This fixture creates one asset collector that is shared
-    between all regression tests and reduces the number of
-    API calls made to the remote repository."""
-    return RegressionTestAssetCollector()
+    When running using pytest-xdist this fixture stops multiple workers operating on
+    the asset directory at once using a file lock.
+    """
+    if worker_id == "master":
+        return RegressionTestAssetCollector()
+
+    tmpdir = tmp_path_factory.getbasetemp().parent
+
+    with FileLock(tmpdir / "regression_tests.lock"):
+        return RegressionTestAssetCollector()
 
 
 @pytest.mark.parametrize(
-    ["input_file"],
-    [[f] for f in INPUT_FILES_FOLDER.glob("*.IN.DAT")],
+    "input_file",
+    list(INPUT_FILES_FOLDER.glob("*.IN.DAT")),
     ids=lambda v: v.stem.replace(".IN", ""),
 )
 def test_input_file(
@@ -237,11 +284,17 @@ def test_input_file(
     tracked_regression_test_assets,
     reg_tolerance: float,
     opt_params_only: bool,
+    hide_model_logs,
+    cli_runner,
+    request,
 ):
     """Tests each input file in the 'input_files' directory.
 
-    The test will locate and download a remote reference MFile that was
-    generated by running the input file on the 'main' branch.
+    The test will locate a remote reference file:
+    * Normally, this is a file that was generated in the PROCESS CI by
+    running an input file on the main branch.
+    * If a `--local-repository` directory is provided, the reference file is found
+    in that directory.
 
     The input file will then be run locally and compared to the reference file.
     The test will fail if:
@@ -263,15 +316,10 @@ def test_input_file(
     :param reg_tolerance: user specified tolerance, percentage differences below which
     are ignored.
     :type reg_tolerance: float
-    :param opt_params_only: if True, user specificied that only optimisation parameters
+    :param opt_params_only: if True, user specified that only optimisation parameters
     should be compared in the test.
     :type opt_params_only: bool
     """
-    if input_file.name == "stellarator.IN.DAT":
-        pytest.skip(
-            reason="Stellarator currently doesn't converge with satisfied inequality constraints."
-        )
-
     new_input_file = tmp_path / input_file.name
     shutil.copy(input_file, new_input_file)
 
@@ -283,16 +331,36 @@ def test_input_file(
 
     scenario = RegressionTestScenario(new_input_file)
 
-    reference_mfile = tracked_regression_test_assets.get_reference_mfile(
-        scenario.scenario_name, tmp_path
-    )
+    local_repo = request.config.getoption("--local-repository")
 
-    # reference MFile cannot be found?
-    # should the file be allowed to run just to test it converges (with a warning about no comparison)?
-    if reference_mfile is None:
-        pytest.skip(
-            reason=f"A reference input file cannot be found for {scenario.scenario_name}"
+    if local_repo is None:
+        reference_mfile = tracked_regression_test_assets.get_reference_mfile(
+            scenario.scenario_name
+        )
+    else:
+        # Note that the MFILE must be present in the local repository with the exact
+        # naming pattern as the IN.DAT (including capitalisation, IN.DAT and MFILE.DAT
+        # must be capitals):
+        # - MY.IN.DAT -> MY.MFILE.DAT
+        # - MY_IN.DAT -> MY_MFILE.DAT
+        # - myIN.DAT -> myMFILE.DAT
+        # This naming convention is consistent with PROCESS but is inconsistent with the
+        # remote repository for legacy reasons (i.e. scenario_name does not follow
+        # this convention).
+        reference_mfile = Path(
+            local_repo, input_file.name.replace("IN.DAT", "MFILE.DAT")
         )
 
-    scenario.run(solver_name)
+    scenario.run(solver_name, cli_runner)
+
+    # reference MFile cannot be found?
+    # raise an error after the file is run so that any errors while running the
+    # input file
+    # are raised first.
+    if reference_mfile is None:
+        raise RuntimeError(
+            "\033[0;36m No reference input file exists (so cannot compare results). "
+            "The input file ran without any exceptions.\033[0m"
+        )
+
     scenario.compare(reference_mfile, reg_tolerance, opt_params_only)

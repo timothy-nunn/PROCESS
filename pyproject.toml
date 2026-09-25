@@ -1,0 +1,290 @@
+[build-system]
+requires      = ["hatchling", "hatch-vcs"]
+build-backend = "hatchling.build"
+
+[tool.hatch.version]
+source           = "vcs"
+fallback-version = "0.0.0"
+
+[tool.hatch.build.hooks.vcs]
+version-file = "process/_version.py"
+
+[tool.hatch.metadata]
+allow-direct-references = true
+
+[project]
+name = "process"
+authors = [{ name = "UKAEA" }]
+description = "Power Reactor Optimisation Code for Environmental and Safety Studies"
+readme = "README.md"
+requires-python = ">=3.10"
+license = "MIT"
+dynamic = ["version"]
+dependencies = [
+    "click>=8.3.2",
+    "numpy>=1.23",
+    "scipy>=1.10",
+    "cvxpy~=1.7.3",
+    "pandas>=2.0",
+    "numba>=0.57",
+    "PyVMCON>=2.4.0,<2.5.0",
+    "CoolProp>=6.4",
+    "matplotlib>=2.1.1",
+    "seaborn>=0.12.2",
+    "tabulate",
+    "pyyaml",  # just used for mfile yml outputting
+    "parameter_frame @ git+ssh://git@github.com/Fusion-Power-Plant-Framework/parameter_frame.git@process"
+   ]
+keywords = ['fusion', 'optimisation']
+classifiers = [
+  "Programming Language :: Python",
+  "Development Status :: 4 - Beta",
+  "Natural Language :: English",
+  "Intended Audience :: Science/Research",
+  "License :: OSI Approved :: MIT License",
+  "Operating System :: OS Independent",
+  "Topic :: Software Development :: Libraries :: Python Modules",
+  "Topic :: Scientific/Engineering :: Physics",
+]
+
+[project.urls]
+Homepage      = "https://www.ukaea.org/service/process/"
+Source        = "https://github.com/ukaea/process"
+Documentation = "https://ukaea.github.io/PROCESS"
+Issues        = "https://github.com/ukaea/process/issues"
+
+[project.optional-dependencies]
+test = [
+  "pytest>=5.4.1",
+  "testbook>=0.4",
+  "pytest-cov>=3.0.0",
+  "pytest-xdist>=2.5.0",
+  "platformdirs~=4.11.8",
+  "filelock",
+  "process[examples]"
+]
+examples = ["jupyter==1.1.1", "jupytext"]
+plotly = ["plotly>=5.15,<8"]
+docs = [
+  "mkdocs>=1.1",
+  "mkdocs-literate-nav",
+  "mkdocs-material>=4.6.3",
+  "mkdocs-git-revision-date-localized-plugin>=1.2",
+  "mkdocs-glightbox>=0.3.4",
+  "pymdown-extensions>=6.3",
+  "bokeh>=3.4.0,<4",
+  "mkdocstrings[python]==1.0.4",
+  "Jinja2>=3.0",
+  "mkdocs-jupyter>=0.24,<0.27",
+  "mkdocs-gen-files",
+  "mkdocs-literate-nav",
+]
+lint = ["pre-commit>=2.16.0", "ruff==0.16.8", "ty"]
+all = ["process[test,docs,lint,examples,plotly]", "toml"]
+
+[project.scripts]
+process = "process.main:process_cli"
+
+[tool.hatch.build.targets.wheel]
+artifacts = [
+  "process/data/lz_non_corona_14_elements/*.dat",
+  "process/core/io/*.png"
+]
+
+[tool.hatch.envs.default]
+features = ["test", "docs", "lint"]
+
+[tool.hatch.envs.test]
+features = ["test"]
+[[tool.hatch.envs.test.matrix]]
+python = ["3.10", "3.11", "3.12", "3.13"]
+[tool.hatch.envs.test.scripts]
+tests      = "pytest -n auto -v {args:tests}"
+tests-unit      = "pytest -n auto -v tests/unit {args:}"
+tests-regression      = "pytest -n auto -v tests/regression {args:}"
+tests-integration      = "pytest -n auto -v tests/integration {args:}"
+tests-examples      = "pytest -n auto -v tests/examples {args:}"
+tests-cov  = "pytest -n auto --cov process  --cov-report html:htmlcov --cov-report xml {args:tests}"
+
+[tool.hatch.envs.track.scripts]
+create-tracking-inputs = "python tracking/run_tracking_inputs.py run tests/regression/input_files {args:}"
+run-tracker = "python tracking/run_tracking_inputs.py track process-tracking-data {args:}"
+
+[tool.hatch.envs.docs]
+features = ["docs"]
+[tool.hatch.envs.docs.scripts]
+build = "mkdocs build"
+serve = "mkdocs serve"
+deploy = "mkdocs gh-deploy"
+
+[tool.hatch.envs.lint]
+detached     = true                           # Don't inherit from default (does not download project dependencies)
+dependencies = ["pre-commit", "ruff==0.16.8", "ty"]
+
+[tool.hatch.envs.lint.scripts]
+fmt    = ["pre-commit run --all-files --hook-stage manual {args:}"]
+fmt_extra = ["ruff check --select=C901,PLR0904,PLR0912,PLR0913,PLR0914,PLR0915,PLR0916,PLR1702,S307 {args:.}"]
+
+[tool.coverage.report]
+exclude_lines = ["no cov", "if __name__ == .__main__.:", "if TYPE_CHECKING:"]
+"omit"        = ["process/_version.py"]
+
+[tool.pytest.ini_options]
+addopts = "--strict-markers -r fEX"
+markers = [
+    "classplot: Show and close figures after running all tests in class",
+]
+
+[tool.ty.terminal]
+output-format = "concise"
+
+[tool.ruff]
+target-version = "py310"
+line-length = 89
+output-format = "concise"
+output-prefer-rule-codes = true
+extend-exclude = ["env", ".env"]
+
+[tool.ruff.format]
+preview = true
+
+[tool.ruff.lint.isort]
+known-first-party = ["process"]
+
+[tool.ruff.lint.flake8-tidy-imports]
+ban-relative-imports = "all"
+
+[tool.ruff.lint.pydocstyle]
+convention = "numpy"
+
+[tool.ruff.lint.flake8-copyright]
+notice-rgx = "(?i)# SPDX-FileCopyrightText:\\s\\d{4}(-(\\d{4}|present))*"
+
+[tool.ruff.lint.mccabe]
+max-complexity = 12
+
+[tool.ruff.lint.pylint]
+# These should be made stricter
+max-args = 17
+max-locals = 17
+
+[tool.ruff.lint.per-file-ignores]
+# Tests can use magic values, assertions, and relative imports
+"tests/**" = [
+    "ARG",
+    "PLR2004",
+    "PLR0904",
+    "PLC1901",
+    "S101",
+    "F841",
+    "D100",
+    "D101",
+    "D102",
+    "D103",
+    "D104",
+    "D105",
+    "D202",
+    "D205",
+    "D210",
+    "D300",
+    "D301",
+    "D401",
+    "D403",
+    "D404",
+    "D406",
+    "D409",
+    "DOC201",
+    "DOC501",
+    "N802",
+    "PLC2701",
+    "PT023",
+    "RUF059",
+    "T201",
+]
+"examples/**" = [ 'B018', 'E402']
+"{tests,tracking,documentation/scripts,examples}/**" = ['INP001']
+"process/{core/io/plot/summary.py,data_structure/*}" = ["E501"]
+
+[tool.ruff.lint]
+preview = true
+select = ["ALL"]
+ignore =  [
+    "ANN",     # type annotations
+    "EM",      # string in error messages
+    "B019",    # using cache memory leaks
+    "COM812",  # enforce trailing comma, disagrees with black/ruff format
+    "D200",    # docs stuff
+    "D203",
+    "D205",
+    "D301",
+    "D400",
+    "D401",
+    "DOC502",  # Omit non-explicit exceptions from docstrings
+    "DTZ005",  # datetime timezone arg
+    "FIX002",  # Line contains todo
+    "PLW1514", # Specify file open encoding
+    "PTH123",  # use Path.open
+    "RUF052",  # not dummy variables just private
+    "RUF067",  # things in init
+    "TRY003",  # put error messages in error class
+    "TRY400",   # Error instead of exception
+    "FURB152",  # 3.14 != pi
+    # should remove
+    "ERA",  # remove commented out code
+    "SLF001",  # private method use
+    "DOC201",
+    "CPY001",
+    "T201",
+    "FBT001",
+    "FBT002",
+    "FBT003",
+    "PLR2004",
+    "PLW0603",
+    "TD",
+    "G004",
+
+    # urgent removal remainder
+    # complexity
+    "C901",
+    "PLR0904",
+    "PLR0912",
+    "PLR0913",
+    "PLR0914",
+    "PLR0915",
+    "PLR0916",
+    "PLR1702",
+
+    "S307",
+
+    "RUF105",  # noqa-comments
+    "RUF106",  # rule-codes-in-suppression-comments
+    "RUF201",  # rule-codes-in-selectors
+    # and now ruff ignores preferences
+    "pytest-fixture-autouse"
+]
+
+[tool.ruff.lint.pep8-naming]
+ignore-names = [
+    "*PROCESS*",
+    "*Bt*",
+    "*Bp*",
+    "*keV*",
+    "*MPa*",
+    "*H*",
+    "*T*",
+    "*D*",
+    "*He*",
+    "*Be*",
+    "C",
+    "N",
+    "O",
+    "Ne",
+    "Si",
+    "Ar",
+    "Fe",
+    "Ni",
+    "Kr",
+    "Xe",
+    "W",
+    "*W7X*",
+]

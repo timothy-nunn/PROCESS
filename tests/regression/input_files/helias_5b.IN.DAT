@@ -1,0 +1,191 @@
+*************************************************************************
+*****                                                               *****
+*****                        HELIAS-5B                              *****
+*****               Stuart Muldrew (17/01/2019)                     *****
+*****            Based on Felix Warmer Run (27/05/2015)             *****
+*****   Warmer et al. (2016), IEEE Trans. Plasma Sci. 44, 1576      *****
+*****                                                               *****
+*************************************************************************
+
+*---------------Constraint Equations---------------*
+
+n_equality_constraints = 3               *number of equalities
+
+
+*--------------- equalities
+icc = 2                 *Global power balance (consistency equation)
+icc = 11                *Radial build (consistency equation)
+icc = 16                *Net electric power lower limit
+
+
+*-------------- inequalities
+icc = 84                *Lower beta limit
+icc = 24                *Upper beta limit
+
+
+
+*---------------Iteration Variables----------------*
+
+ixc = 4                 *temp_plasma_electron_vol_avg_kev
+boundl(4) = 4.
+boundu(4) = 25.
+
+ixc = 6                 *nd_plasma_electrons_vol_avg
+nd_plasma_electrons_vol_avg = 2.0914E20        *Electron density (/m3)
+boundl(6) = 3.005E19
+boundu(6) = 5.005E20
+
+ixc = 10                *hfact
+hfact = 1.2187          *H-factor on energy confinement times
+boundu(10) = 2.0
+
+
+*----------------Physics Variables-----------------*
+
+alphan   = 0.35         *Density profile index
+alphat   = 1.20         *Temperature profile index
+aspect   = 12.22        *Aspect ratio
+b_plasma_toroidal_on_axis       = 5.5          *Toroidal field on axis (T)
+i_plasma_ignited   = 1            *Switch for ignition assumption (1: Ignited)
+i_plasma_pedestal = 0           *Switch for pedestal profiles (0: Parabolic Profiles)
+i_rad_loss = 1            *Switch for radiation loss term usage in power balance (1: Total power lost is scaling power plus core radiation only)
+i_confinement_time      = 38           *Switch for energy confinement time scaling law (38: ISS04)
+rmajor   = 22.0         *Plasma major radius (m)
+f_sync_reflect    = 0.6          *Synchrotron wall reflectivity factor
+temp_plasma_electron_vol_avg_kev       = 7.0          *Volume averaged electron temperature (keV)
+f_temp_plasma_ion_electron   = 0.95         *Ion temperature / electron temperature
+
+
+*--------------Stellarator Variables---------------*
+
+istell   = 1            *Switch for stellarator option
+bmn      = 0.001        *Relative radial field perturbation
+f_asym   = 1.1          *Divertor heat load peaking factor
+f_rad    = 0.85         *Radiated power fraction in sol
+f_w      = 0.6          *Island size fraction factor
+flpitch  = 0.001        *Field line pitch (rad)
+iotabar  = 0.9          *Rotational transform (reciprocal of tokamak q)
+isthtr   = 1            *Switch for stellarator auxiliary heating method (1: Electron cyclotron resonance heating)
+shear    = 0.5          *Magnetic shear, derivative of iotabar
+
+*-----------------Build Variables------------------*
+
+dr_blkt_inboard  = 0.7          *Inboard blanket thickness (m)
+dr_blkt_outboard  = 0.8          *Outboard blanket thickness (m)
+dr_cryostat    = 0.15         *Cryostat thickness (m)
+dr_vv_inboard  = 0.35         *Inboard vacuum vessel thickness (tf coil / shield) (m)
+dr_vv_outboard = 0.35         *Outboard vacuum vessel thickness (tf coil / shield) (m)
+dz_vv_upper = 0.35         *Topside vacuum vessel thickness (tf coil / shield) (m)
+dz_vv_lower = 0.35         *Underside vacuum vessel thickness (tf coil / shield) (m)
+dr_shld_vv_gap_inboard    = 0.025        *Gap between inboard vacuum vessel and tf coil (m)
+gapomin  = 0.025        *Minimum gap between outboard vacuum vessel and TF coil (m)
+dr_fw_plasma_gap_inboard  = 0.15         *Gap between plasma and first wall; inboard side (m)
+dr_fw_plasma_gap_outboard  = 0.3          *Gap between plasma and first wall; outboard side (m)
+dr_shld_inboard  = 0.4          *Inboard shield thickness (m)
+dr_shld_outboard  = 0.7          *Outboard shield thickness (m)
+dz_shld_upper  = 0.7          *Upper/lower shield thickness (m)
+dz_xpoint_divertor     = 0.0          *Vertical gap between x-point and divertor (m)
+
+*---------------Constraint Variables---------------*
+
+p_plant_electric_net_required_mw = 1000         *Required net electric power (MW)
+beta_vol_avg_max = 0.05          *upper beta limit
+beta_vol_avg_min = 0.01    *lower beta limit
+
+*-------------Current Drive Variables--------------*
+
+eta_ecrh_injector_wall_plug   = 0.7          *ECH wall plug to injector efficiency
+p_hcd_primary_extra_heat_mw    = 0.0          *Heating power not used for current drive (MW)
+
+*----------------Divertor Variables----------------*
+
+anginc   = 0.035        *Angle of incidence of field line on plate (rad)
+tdiv     = 3.0          *Temperature at divertor (eV)
+xpertin  = 1.5          *Perpendicular heat transport coefficient (m2/s)
+
+*------------------FWBs Variables------------------*
+
+den_steel   = 7800.0       *Density of steel (kg/m3)
+f_p_blkt_multiplication    = 1.18         *Energy multiplication in blanket and shield
+eta_coolant_pump_electric   = 1.0          *Electrical efficiency of primary coolant pumps
+fblbe    = 0.47         *Beryllium fraction of blanket by volume
+fblli2o  = 0.07         *Lithium oxide fraction of blanket by volume
+fbllipb  = 0.00         *Lithium lead fraction of blanket by volume
+fblss    = 0.13         *Stainless steel fraction of blanket by volume
+fblvd    = 0.00         *Vanadium fraction of blanket by volume
+fhole    = 0.0          *Area fraction taken up by other holes (not used)
+fwclfr   = 0.1          *First wall coolant fraction
+p_blkt_coolant_pump_mw = 120.0      *Blanket coolant mechanical pumping power (MW)
+p_fw_coolant_pump_mw = 56.0         *First wall coolant mechanical pumping power (MW)
+p_div_coolant_pump_mw = 24.0        *Divertor coolant mechanical pumping power (MW)
+i_p_coolant_pumping = 0     *Switch for pumping power (0: User sets pump power directly)
+i_thermal_electric_conversion = 2     *Switch for power conversion cycle (2: user input thermal-electric efficiency)
+f_a_blkt_cooling_channels   = 0.10         *Coolant void fraction in blanket (blktmodel=0)
+vfshld   = 0.60         *Coolant void fraction in shield
+radius_fw_channel = 0.008 *Inner radius of first wall coolant channel (m) is 0.008 for stellarator
+
+*-------------Heat Transport Variables-------------*
+
+eta_turbine    = 0.4          *Thermal to electric conversion efficiency; if seconday_cycle=2
+
+*------------Impurity Radiation Module-------------*
+
+*imprad_model = 1        *Switch for impurity radiation model
+radius_plasma_core_norm = 0.6        *Normalised radius defining the 'core' region
+
+f_nd_impurity_electrons(1)  = 1.0          *Hydrogen (fraction calculated by code)
+f_nd_impurity_electrons(2)  = 0.1          *Helium (fraction calculated by code)
+f_nd_impurity_electrons(3)  = 0.0          *Beryllium
+f_nd_impurity_electrons(4)  = 0.0          *Carbon
+f_nd_impurity_electrons(5)  = 0.0          *Nitrogen
+f_nd_impurity_electrons(6)  = 0.0          *Oxygen
+f_nd_impurity_electrons(7)  = 0.0          *Neon
+f_nd_impurity_electrons(8)  = 0.0          *Silicon
+f_nd_impurity_electrons(9)  = 0.0          *Argon
+f_nd_impurity_electrons(10) = 0.0          *Iron
+f_nd_impurity_electrons(11) = 0.0          *Nickel
+f_nd_impurity_electrons(12) = 0.0          *Krypton
+f_nd_impurity_electrons(13) = 0.0          *Xenon
+f_nd_impurity_electrons(14) = 1.0E-5       *Tungsten
+
+*---------------------Numerics---------------------*
+
+i_process_run_mode  = 1            *Code operation switch (1: Optimisation, VMCON only)
+maxcal   = 100          *Maximum number of VMCON iterations
+i_figure_merit   = 7            *Switch for figure-of-merit (7: Min Capital Cost)
+runtitle = HELIAS-5B
+
+*-----------------Tfcoil Variables-----------------*
+
+f_a_tf_turn_cable_copper  = 0.69         *Copper fraction of cable conductor (TF coils)
+i_tf_sc_mat = 1         *Switch for superconductor material in tf coils (1: ITER Nb3Sn)
+tftmp     = 4.2         *Peak helium coolant temperature in TF coils and PF coils (k)
+temp_tf_cryo    = 4.2         *Coil temperature for cryogenic plant power calculation (K)
+dx_tf_turn_general = 0.056       *Dimension conductor area including steel and insulation.
+dx_tf_turn_insulation  = 0.002       *Conduit insulation thickness (m)
+dx_tf_turn_steel  = 0.0012      *TF coil conduit case thickness (m)
+f_a_tf_turn_cable_space_extra_void      = 0.3         *Coolant fraction of TF coil leg (i_tf_sup=0)
+dr_tf_nose_case    = 0.06        * Case thickness
+*-----------------Pfcoil Variables-----------------*
+
+
+*------------------Cost Variables------------------*
+i_cost_model = 0          *0: 1990 cost module, the 2015 does not work yet for stellarators
+abktflnc = 15.0         *Allowable first wall/blanket neutron (MW-yr/m2)
+adivflnc = 25.0         *Allowable divertor heat fluence (MW-yr/m2)
+f_t_plant_available   = 0.75         *Total plant capacity fraction
+dintrt   = 0.00         *Diff between borrowing and saving interest rates
+fcap0    = 1.15         *Average cost of money for construction of plant
+fcap0cp  = 1.06         *Average cost of money for replaceable components
+fcontng  = 0.15         *Project contingency factor
+fcr0     = 0.065        *Fixed charge rate during construction
+fkind    = 1.0          *Multiplier for nth of a kind costs
+i_plant_availability   = 0            *Switch for plant availability model (0: Use input value for f_t_plant_available)
+ifueltyp = 0            *Switch (0: treat blanket divertor first wall and fraction fcdfuel of CD equipment as capital cost)
+ireactor = 1            *Switch for net electric power calculations (1: Calculate MW electric and c-o-e)
+lsa      = 2            *Level of safety assurance switch (2: In-between)
+discount_rate = 0.06    *Effective cost of money in constant dollars
+life_plant    = 40.0         *Plant life (years)
+ucblvd   = 280.0        *Unit cost for blanket vanadium ($/kg)
+ucdiv    = 5.0E5        *Cost of divertor blade ($)
+ucme     = 3.0E8        *Unit cost of maintenance equipment ($)
