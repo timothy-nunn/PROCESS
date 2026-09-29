@@ -398,6 +398,8 @@ class Caller:
 
         # FISPACT and LOCA model (not used)- removed
 
+        exit()
+
 
 def finalise(models, data, ifail: int, non_idempotent_msg: str | None = None):
     """Routine to print out the final point in the scan.
