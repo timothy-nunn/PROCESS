@@ -13,7 +13,7 @@ from parameter_frame import ParameterValueType
 
 logger = logging.getLogger(__name__)
 
-KEEP_EDIT_USE_RECORDS = False
+KEEP_EDIT_USE_RECORDS = True
 FILTER_EDIT_USE_RECORDS_PATH: Callable[[inspect.FrameInfo], bool] = lambda frame: (  # noqa: E731
     "/models/" in frame.filename
 )
@@ -175,6 +175,8 @@ class Parameter(DefaultParameter, Generic[ParameterValueType]):
     def set_value(self, new_value, source=""):
         """Update the data that this Parameter wraps."""
         if KEEP_EDIT_USE_RECORDS:
+            if len(self._used) > 0 and len(self._edited) == 0:
+                print(f"{self.name} has been used before its first edit!")
             try:
                 called_from = next(
                     filter(
