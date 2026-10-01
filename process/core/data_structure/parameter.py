@@ -189,7 +189,7 @@ class Parameter(DefaultParameter, Generic[ParameterValueType]):
 
             self._edited.append(
                 EditRecord(
-                    value=np.copy(self.history()[0].value),
+                    value=np.copy(self.history()[-1].value),
                     new_value=np.copy(new_value._value)
                     if isinstance(new_value, Parameter)
                     else np.copy(new_value),
@@ -377,9 +377,14 @@ class PROCESSModelData:
         # Not everything is a Parameter in PROCESS
         if isinstance(current_value, Parameter):
             logger.debug(
-                f"Doing self.{name} = {value!r} only copies {value} into "
-                f"{name}.value. Use set_field to exactly set the dataclass field "
-                f"i.e. if you do not want self.{name} to be a Parameter anymore."
+                "Doing self.%s = %r only copies %s into "
+                "%s.value. Use set_field to exactly set the dataclass field "
+                "i.e. if you do not want self.%s to be a Parameter anymore.",
+                name,
+                value,
+                value,
+                name,
+                name,
             )
             if isinstance(value, Parameter):
                 current_value.set_value(value.value, source=value.name)
